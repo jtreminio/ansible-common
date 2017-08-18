@@ -1,0 +1,10 @@
+-A INPUT
+{%- if firewall_rule.protocol %}
+ -p {{ firewall_rule.protocol }}
+{%- endif -%}
+{%- if firewall_rule.port %}
+ -m multiport --dports {{ firewall_rule.port }}
+{%- endif -%}
+{%- if firewall_rule.action %}
+ -j {{ firewall_rule.action|upper }}
+{%- endif -%}
