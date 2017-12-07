@@ -1,0 +1,14 @@
+---
+
+- include: group.yml
+  loop_control:
+    loop_var: user_groups
+  vars:
+    groups_list: "{{ user_groups.split(':')[0:] }}"
+  with_items: "{{ users }}"
+
+- user:
+    name: "{{ item.split(':')[0] }}"
+    groups: "{{ item.split(':')[0:] }}"
+    append: yes
+  with_items: "{{ users }}"
