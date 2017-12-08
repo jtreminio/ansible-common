@@ -4,3 +4,8 @@ _firewall_rule:
   action: accept
   port: ~
   protocol: tcp
+
+_resolv:
+  nameservers: ''
+  domainname: ''
+  searchpath: ''

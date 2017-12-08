@@ -1,0 +1,12 @@
+---
+
+- set_fact:
+    resolv: "{{ _resolv|combine(resolv) }}"
+
+- set_fact:
+    resolv_nameservers: "{{ resolv.nameservers }}"
+    resolv_domain: "{{ resolv.domainname }}"
+    resolv_search: "{{ resolv.searchpath }}"
+
+- include_role:
+    name: ahuffman.resolv
