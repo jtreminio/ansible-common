@@ -1,0 +1,14 @@
+---
+
+- cron:
+    name: "{{ item.name }}"
+    user: "{{ item.user }}"
+    job: "{{ item.command }}"
+    minute: "{{ (item.minute == '') | ternary('*', item.minute) }}"
+    hour: "{{ (item.hour == '') | ternary('*', item.hour) }}"
+    weekday: "{{ (item.weekday == '') | ternary('*', item.weekday) }}"
+    month: "{{ (item.month == '') | ternary('*', item.month) }}"
+    day: "{{ (item.monthday == '') | ternary('*', item.monthday) }}"
+  with_items: "{{ crons }}"
+
+# todo: add support for env declaration
