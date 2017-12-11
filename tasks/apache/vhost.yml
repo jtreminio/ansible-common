@@ -1,0 +1,14 @@
+# receives `vhost` dict, `index` int
+
+- set_fact:
+    index_formatted: "{{ '%02d'|format(index|int) }}"
+    servername: "{{ vhost.servername }}"
+    logroot: '/var/log/apache2' # rhel: /var/log/httpd
+
+# todo: change sites-enabled to sites-available
+- template:
+    src: "{{ role_path }}/templates/apache/vhost.j2"
+    dest: "/etc/apache2/sites-enabled/{{ index_formatted }}-{{ servername }}.conf"
+    owner: root
+    group: root
+    mode: 0644

@@ -1,0 +1,666 @@
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+# {{ ansible_managed }}
+
+<VirtualHost {{ vhost.port|join(' ') }}>
+{% if vhost.servername|default(false) %}
+  ServerName {{ vhost.servername }}
+{% endif %}
+{% for serveralias in vhost.serveraliases|default([]) %}
+  ServerAlias {{ serveralias }}
+{% endfor %}
+{% if vhost.serveradmin|default(false) %}
+  ServerAdmin {{ vhost.serveradmin }}
+{% endif %}
+
+  ## Vhost docroot
+{% if vhost.virtual_docroot|default(false) %}
+  VirtualDocumentRoot "{{ vhost.virtual_docroot }}"
+{% elif vhost.docroot|default(false) %}
+  DocumentRoot "{{ vhost.docroot }}"
+{% endif %}
+
+{% if vhost.aliases|default(false) %}
+  ## Alias declarations for resources outside the DocumentRoot
+  {% for alias_statement in vhost.aliases|default([]) %}
+    {% if alias_statement.path|default(false) %}
+      {% if alias_statement.alias|default(false) %}
+  Alias {{ alias_statement.alias }} "{{ alias_statement.path }}"
+      {% elif alias_statement.aliasmatch|default(false) %}
+  AliasMatch {{ alias_statement.aliasmatch }} "{{ alias_statement.path }}"
+      {% elif alias_statement.scriptalias|default(false) %}
+  ScriptAlias {{ alias_statement.scriptalias }} "{{ alias_statement.path }}"
+      {% elif alias_statement.scriptaliasmatch|default(false) %}
+  ScriptAliasMatch {{ alias_statement.scriptaliasmatch }} "{{ alias_statement.path }}"
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if vhost.itk|default(false) %}
+  ## ITK statement
+  <IfModule mpm_itk_module>
+  {% if vhost.itk.user|default(false) and vhost.itk.group|default(false) %}
+    AssignUserId {{ vhost.itk.user }} {{ vhost.itk.group }}
+  {% endif %}
+  {% if vhost.itk.assignuseridexpr|default(false) %}
+    AssignUserIdExpr {{ vhost.itk.assignuseridexpr }}
+  {% endif %}
+  {% if vhost.itk.assigngroupidexpr|default(false) %}
+    AssignGroupIdExpr {{ vhost.itk.assigngroupidexpr }}
+  {% endif %}
+  {% if vhost.itk.maxclientvhost|default(false) %}
+    MaxClientsVHost {{ vhost.itk.maxclientvhost }}
+  {% endif %}
+  {% if vhost.itk.nice|default(false) %}
+    NiceValue {{ vhost.itk.nice }}
+  {% endif %}
+  {% if ansible_kernel | version_compare('3.5.0', '>=') %}
+    {% if vhost.itk.limituidrange|default(false) %}
+    LimitUIDRange {{ vhost.itk.limituidrange }}
+    {% endif %}
+    {% if vhost.itk.limitgidrange|default(false) %}
+    LimitGIDRange {{ vhost.itk.limitgidrange }}
+    {% endif %}
+  {% endif %}
+  </IfModule>
+{% endif %}
+
+{% if vhost.fallbackresource|default(false) %}
+  FallbackResource {{ vhost.fallbackresource }}
+{% endif %}
+
+{% if vhost.allow_encoded_slashes|default(false) %}
+  AllowEncodedSlashes {{ vhost.allow_encoded_slashes }}
+{% endif %}
+
+## Directory, there should at least be a declaration for {{ vhost.docroot }}
+{% include 'apache/directory.j2' %}
+
+{% if vhost.additional_includes|default([]) %}
+  ## Load additional static includes
+  {% for additional_include in vhost.additional_includes|default([]) %}
+  IncludeOptional "{{ additional_include }}"
+  {% endfor %}
+{% endif %}
+
+  ## Logging
+  {% set log_base = logroot ~ "/" ~ index_formatted ~ "-" ~ servername %}
+  ErrorLog "{{ log_base }}_error{{ (vhost.ssl|default(false)|int == 1) | ternary('_ssl', '') }}.log"
+  CustomLog "{{ log_base }}_access{{ (vhost.ssl|default(false)|int == 1) | ternary('_ssl', '') }}.log"
+  LogLevel {{ vhost.log_level }}
+
+  ServerSignature Off
+
+{% for action in vhost.actions|default([]) %}
+  Action {{ action.mime }} "{{ action.script }}"
+{% endfor %}
+
+{% if vhost.block|default([]) %}
+  ## Block access statements
+  {% for block in vhost.block|default([]) %}
+  <DirectoryMatch {{ block }}>
+    Require all denied
+  </DirectoryMatch>
+  {% endfor %}
+{% endif %}
+
+{% for error_document in vhost.error_documents|default([]) %}
+  ErrorDocument {{ error_document.error_code }} "{{ error_document.document }}"
+{% endfor %}
+</VirtualHost>
+
+{% if vhost.headers|default([]) %}
+  ## Header rules
+  ## as per http://httpd.apache.org/docs/2.2/mod/mod_headers.html#header
+  {% for header in vhost.headers|default([]) %}
+  Header {{ header }}
+  {% endfor %}
+{% endif %}
+
+{% if vhost.request_headers|default([]) %}
+  ## Request header rules
+  ## as per http://httpd.apache.org/docs/2.2/mod/mod_headers.html#requestheader
+  {% for request_statement in vhost.request_headers|default([]) %}
+  RequestHeader {{ request_statement }}
+  {% endfor %}
+{% endif %}
+
+{% if vhost.proxy_dest|default([]) or vhost.proxy_pass|default([])
+   or vhost.proxy_pass_match|default([]) or vhost.proxy_dest_match|default([]) %}
+  ## Proxy rules
+  ProxyRequests Off
+  {% if vhost.proxy_preserve_host|default(false) %}
+  ProxyPreserveHost On
+  {% else %}
+  ProxyPreserveHost Off
+  {% endif %}
+  {% if vhost.proxy_add_headers|default(false) %}
+  ProxyAddHeaders On
+  {% else %}
+  ProxyAddHeaders Off
+  {% endif %}
+  {% if vhost.proxy_error_override|default(false) %}
+  ProxyErrorOverride On
+  {% endif %}
+  {% for proxy in vhost.proxy_pass|default([]) %}
+    {% for uri in proxy.no_proxy_uris|default([]) %}
+  ProxyPass {{ uri }} !
+    {% endfor %}
+    {% for uri in proxy.no_proxy_uris_match|default([]) %}
+  ProxyPassMatch {{ uri }} !
+    {% endfor %}
+  ProxyPass {{ proxy.path }} {{ proxy.url }}
+    {%- for param_key, param_value in proxy.params|default({})|dictsort %}
+ {{ param_key }}={{ param_value }}
+    {%- endfor %}
+ {{ (proxy.keywords|default([]))|join(' ') }}
+    {% for reverse_cookies in proxy.reverse_cookies|default([]) %}
+      {% if reverse_cookies.path|default(false) %}
+  ProxyPassReverseCookiePath {{ reverse_cookies.path }} {{ reverse_cookies.url }}
+      {% endif %}
+      {% if reverse_cookies.domain|default(false) %}
+  ProxyPassReverseCookieDomain {{ reverse_cookies.domain }} {{ reverse_cookies.url }}
+      {% endif %}
+    {% endfor %}
+    {% if not proxy.reverse_urls|default(false) %}
+  ProxyPassReverse {{ proxy.path }} {{ proxy.url }}
+    {% else %}
+      {% for reverse_url in proxy.reverse_urls|default([]) %}
+  ProxyPassReverse {{ proxy.path }} {{ reverse_url }}
+      {% endfor %}
+    {% endif %}
+    {% for setenv_var in proxy.setenv|default([]) %}
+  SetEnv {{ setenv_var }}
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+{% for proxy in vhost.proxy_pass_match|default([]) %}
+  {% for uri in proxy.no_proxy_uris|default([]) %}
+  ProxyPass {{ uri }} !
+  {% endfor %}
+  {% for uri in proxy.no_proxy_uris_match|default([]) %}
+  ProxyPassMatch {{ uri }} !
+  {% endfor %}
+  ProxyPassMatch {{ proxy.path }} {{ proxy.url }}
+  {%- for param_key, param_value in proxy.params|default({})|dictsort %}
+ {{ param_key }}={{ param_value }}
+  {%- endfor %}
+ {{ (proxy.keywords|default([]))|join(' ') }}
+  {% if not proxy.reverse_urls|default(false) %}
+  ProxyPassReverse {{ proxy.path }} {{ proxy.url }}
+  {% else %}
+    {% for reverse_url in proxy.reverse_urls|default([]) %}
+  ProxyPassReverse {{ proxy.path }} {{ reverse_url }}
+    {% endfor %}
+  {% endif %}
+  {% for setenv_var in proxy.setenv|default([]) %}
+  SetEnv {{ setenv_var }}
+  {% endfor %}
+{% endfor %}
+{% if vhost.proxy_dest|default(false) %}
+  {% for uri in vhost.no_proxy_uris|default([]) %}
+  ProxyPass        {{ uri }} !
+  {% endfor %}
+  ProxyPass        / {{ vhost.proxy_dest }}/
+  ProxyPassReverse / {{ vhost.proxy_dest }}/
+{% endif %}
+{% if vhost.proxy_dest_match|default(false) %}
+  {% for uri in vhost.no_proxy_uris_match|default([]) %}
+  ProxyPassMatch   {{ uri }} !
+  {% endfor %}
+  ProxyPassMatch   / {{ vhost.proxy_dest_match }}/
+  ProxyPassReverse / {{ vhost.proxy_dest_reverse_match }}/
+{% endif %}
+
+{% if vhost.rack_base_uris|default(false) %}
+  ## Enable rack
+  {% for uri in vhost.rack_base_uris|default([]) %}
+  RackBaseURI {{ uri }}
+  {% endfor %}
+{% endif %}
+
+{% if vhost.passenger_base_uris|default(false) %}
+  ## Enable passenger base uris
+  {% for uri in vhost.passenger_base_uris|default([]) %}
+  PassengerBaseURI {{ uri }}
+  {% endfor %}
+{% endif %}
+
+{# Redirect support not yet implemented #}
+
+{% if vhost.rewrites|default(false) %}
+  ## Rewrite rules
+  RewriteEngine On
+  {% if vhost.rewrite_inherit|default(false) %}
+  RewriteOptions Inherit
+  {% endif %}
+  {% if vhost.rewrite_base|default(false) %}
+  RewriteBase {{ vhost.rewrite_base }}
+  {% endif %}
+
+  {% for rewrite_details in vhost.rewrites|default([]) %}
+    {% if rewrite_details.comment|default(false) %}
+  #{{ rewrite_details.comment }}
+    {% endif %}
+    {% if rewrite_details.rewrite_base|default(false) %}
+  RewriteBase {{ rewrite_details.rewrite_base }}
+    {% endif %}
+    {% for command in rewrite_details.rewrite_cond|default([]) %}
+  RewriteCond {{ command }}
+    {% endfor %}
+    {% for command in rewrite_details.rewrite_map|default([]) %}
+  RewriteMap {{ command }}
+    {% endfor %}
+    {% for command in rewrite_details.rewrite_rule|default([]) %}
+  RewriteRule {{ command }}
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+{# reverse compatibility #}
+{% if vhost.rewrite_rule|default(false) and not vhost.rewrites|default(false) %}
+  ## Rewrite rules
+  RewriteEngine On
+  {% if vhost.rewrite_base|default(false) %}
+  RewriteBase {{ vhost.rewrite_base }}
+  {% endif %}
+  {% for cond in vhost.rewrite_cond|default([]) %}
+  RewriteCond {{ cond }}
+  {% endfor %}
+  RewriteRule {{ vhost.rewrite_rule }}
+{% endif %}
+
+{% for salias in vhost.scriptaliases|default([]) %}
+  {% if salias.alias|default(false) and salias.path|default(false) %}
+  ScriptAlias {{ salias.alias }} "{{ salias.path }}"
+  {% elif salias.aliasmatch|default(false) and salias.path|default(false) %}
+  ScriptAliasMatch {{ salias.aliasmatch }} "{{ salias.path }}"
+  {% endif %}
+{% endfor %}
+
+{% if vhost.setenv|default(false) %}
+  ## SetEnv/SetEnvIf for environment variables
+  {% for envvar in vhost.setenv|default([]) %}
+  SetEnv {{ envvar }}
+  {% endfor %}
+{% endif %}
+{% for envifvar in vhost.setenvif|default([]) %}
+  SetEnvIf {{ envifvar }}
+{% endfor %}
+{% for envifncvar in vhost.setenvifnocase|default([]) %}
+  SetEnvIfNoCase {{ envifncvar }}
+{% endfor %}
+
+{% if vhost.ssl|default(false) %}
+  ## SSL directives
+  SSLEngine on
+  SSLCertificateFile      "{{ vhost.ssl_cert }}"
+  SSLCertificateKeyFile   "{{ vhost.ssl_key }}"
+  {% if vhost.ssl_chain|default(false) %}
+  SSLCertificateChainFile "{{ vhost.ssl_chain }}"
+  {% endif %}
+  {% if vhost.ssl_certs_dir|default(false) %}
+  SSLCACertificatePath    "{{ vhost.ssl_certs_dir }}"
+  {% endif %}
+  {% if vhost.ssl_ca|default(false) %}
+  SSLCACertificateFile    "{{ vhost.ssl_ca }}"
+  {% endif %}
+  {% if vhost.ssl_crl_path|default(false) %}
+  SSLCARevocationPath     "{{ vhost.ssl_crl_path }}"
+  {% endif %}
+  {% if vhost.ssl_crl|default(false) %}
+  SSLCARevocationFile     "{{ vhost.ssl_crl }}"
+  {% endif %}
+  {% if vhost.ssl_crl_check|default(false) %}
+  SSLCARevocationCheck    "{{ vhost.ssl_crl_check }}"
+  {% endif %}
+  {% if vhost.ssl_protocol|default(false) is string %}
+  SSLProtocol             {{ vhost.ssl_protocol }}
+  {% elif vhost.ssl_protocol|default(false) is iterable %}
+  SSLProtocol             {{ vhost.ssl_protocol|join(' ') }}
+  {% endif %}
+  {% if vhost.ssl_cipher|default(false) %}
+  SSLCipherSuite          {{ vhost.ssl_cipher }}
+  {% endif %}
+  {% if vhost.ssl_honorcipherorder|default(false) %}
+  SSLHonorCipherOrder     {{ vhost.ssl_honorcipherorder }}
+  {% endif %}
+  {% if vhost.ssl_verify_client|default(false) %}
+  SSLVerifyClient         {{ vhost.ssl_verify_client }}
+  {% endif %}
+  {% if vhost.ssl_verify_depth|default(false) %}
+  SSLVerifyDepth          {{ vhost.ssl_verify_depth }}
+  {% endif %}
+  {% if vhost.ssl_options|default(false) is string %}
+  SSLOptions              {{ vhost.ssl_options }}
+  {% elif vhost.ssl_options|default(false) is iterable %}
+  SSLOptions              {{ vhost.ssl_options|join(' ') }}
+  {% endif %}
+  {% if vhost.ssl_openssl_conf_cmd|default(false) %}
+  SSLOpenSSLConfCmd       {{ vhost.ssl_openssl_conf_cmd }}
+  {% endif %}
+  {% if vhost.ssl_stapling is defined %}
+  {% if vhost.ssl_stapling|string in ['true', 'True', '1', 1, 'on', 'On', ] %}
+    {% set v = 'On' %}{% else %}{% set v = 'Off' %}
+  {% endif %}
+  SSLUseStapling {{ v }}
+  {% endif %}
+  {% if vhost.ssl_stapling_timeout|default(false) %}
+  SSLStaplingResponderTimeout {{ vhost.ssl_stapling_timeout }}
+  {% endif %}
+  {% if vhost.ssl_stapling_return_errors is defined %}
+  {% if vhost.ssl_stapling_return_errors|string in ['true', 'True', '1', 1, 'on', 'On', ] %}
+    {% set v = 'On' %}{% else %}{% set v = 'Off' %}
+  {% endif %}
+  SSLStaplingReturnResponderErrors {{ v }}
+  {% endif %}
+{% endif %}
+
+{% if vhost.ssl_proxyengine|default(false) %}
+  # SSL Proxy directives
+  SSLProxyEngine On
+  {% if vhost.ssl_proxy_verify|default(false) %}
+  SSLProxyVerify                 {{ vhost.ssl_proxy_verify }}
+  {% endif %}
+  {% if vhost.ssl_proxy_check_peer_cn|default(false) %}
+  SSLProxyCheckPeerCN            {{ vhost.ssl_proxy_check_peer_cn }}
+  {% endif %}
+  {% if vhost.ssl_proxy_check_peer_name|default(false) %}
+  SSLProxyCheckPeerName          {{ vhost.ssl_proxy_check_peer_name }}
+  {% endif %}
+  {% if vhost.ssl_proxy_check_peer_expire|default(false) %}
+  SSLProxyCheckPeerExpire        {{ vhost.ssl_proxy_check_peer_expire }}
+  {% endif %}
+  {% if vhost.ssl_proxy_machine_cert|default(false) %}
+  SSLProxyMachineCertificateFile "{{ vhost.ssl_proxy_machine_cert }}"
+  {% endif %}
+  {% if vhost.ssl_proxy_protocol|default(false) is string %}
+  SSLProxyProtocol               {{ vhost.ssl_proxy_protocol }}
+  {% elif vhost.ssl_proxy_protocol|default(false) is iterable %}
+  SSLProxyProtocol               {{ vhost.ssl_proxy_protocol|join(' ') }}
+  {% endif %}
+{% endif %}
+
+{% if vhost.auth_kerb|default(false) %}
+  ## Kerberos directives
+  {% if vhost.krb_method_negotiate|default(false) %}
+  KrbMethodNegotiate {{ vhost.krb_method_negotiate }}
+  {% endif %}
+  {% if vhost.krb_method_k5passwd|default(false) %}
+  KrbMethodK5Passwd {{ vhost.krb_method_k5passwd }}
+  {% endif %}
+  {% if vhost.krb_authoritative|default(false) %}
+  KrbAuthoritative {{ vhost.krb_authoritative }}
+  {% endif %}
+  {% if vhost.krb_auth_realms|default(false) %}
+  KrbAuthRealms {{ vhost.krb_auth_realms|join(' ') }}
+  {% endif %}
+  {% if vhost.krb_5keytab|default(false) %}
+  Krb5Keytab {{ vhost.krb_5keytab }}
+  {% endif %}
+  {% if vhost.krb_local_user_mapping|default(false) %}
+  KrbLocalUserMapping {{ vhost.krb_local_user_mapping }}
+  {% endif %}
+  {% if vhost.krb_verify_kdc|default(false) %}
+  KrbVerifyKDC {{ vhost.krb_verify_kdc }}
+  {% endif %}
+  {% if vhost.krb_servicename|default(false) %}
+  KrbServiceName {{ vhost.krb_servicename }}
+  {% endif %}
+  {% if vhost.krb_save_credentials|default(false) %}
+  KrbSaveCredentials {{ vhost.krb_save_credentials }}
+  {% endif %}
+{% endif %}
+
+{% if vhost.wsgi_application_group|default(false) %}
+  WSGIApplicationGroup {{ vhost.wsgi_application_group }}
+{% endif %}
+{% if vhost.wsgi_daemon_process|default(false) and vhost.wsgi_daemon_process_options|default(false) %}
+  WSGIDaemonProcess {{ vhost.wsgi_daemon_process }}
+  {%- for param_key, param_value in vhost.wsgi_daemon_process_options|default({})|dictsort %}
+ {{ param_key }}={{ param_value }}
+  {%- endfor %}
+{% elif vhost.wsgi_daemon_process|default(false) and not vhost.wsgi_daemon_process_options|default(false) %}
+  WSGIDaemonProcess {{ vhost.wsgi_daemon_process }}
+{% endif %}
+
+{% if vhost.wsgi_import_script|default(false) and vhost.wsgi_import_script_options|default(false) %}
+  WSGIImportScript {{ vhost.wsgi_import_script }}
+  {%- for param_key, param_value in vhost.wsgi_import_script_options|default({})|dictsort %}
+ {{ param_key }}={{ param_value }}
+  {%- endfor %}
+{% endif %}
+
+{% if vhost.wsgi_process_group|default(false) %}
+  WSGIProcessGroup {{ vhost.wsgi_process_group }}
+{% endif %}
+{% if vhost.wsgi_script_aliases_match|default(false) and vhost.wsgi_script_aliases_match|default(false) %}
+  {% for param_key, param_value in vhost.wsgi_script_aliases_match|default({})|dictsort %}
+  WSGIScriptAliasMatch {{ param_key }} "{{ param_value }}"
+  {% endfor %}
+{% endif %}
+{% if vhost.wsgi_script_aliases|default(false) and vhost.wsgi_script_aliases|default(false) %}
+  {% for param_key, param_value in vhost.wsgi_script_aliases|default({})|dictsort %}
+  WSGIScriptAlias {{ param_key }} "{{ param_value }}"
+  {% endfor %}
+{% endif %}
+{% if vhost.wsgi_pass_authorization|default(false) %}
+  WSGIPassAuthorization {{ vhost.wsgi_pass_authorization }}
+{% endif %}
+{% if vhost.wsgi_chunked_request|default(false) %}
+  WSGIChunkedRequest {{ vhost.wsgi_chunked_request }}
+{% endif %}
+
+{% if vhost.custom_fragment|default(false) %}
+  ## Custom fragment
+  {{ vhost.custom_fragment }}
+{% endif %}
+
+{% if vhost.fastcgi_server|default(false) %}
+  FastCgiExternalServer {{ vhost.fastcgi_server }} -socket {{ vhost.fastcgi_socket }}
+  {%- if vhost.fastcgi_server|default(false) %} -idle-timeout {{ vhost.fastcgi_idle_timeout }}{%- endif %}
+{% endif %}
+
+{% if vhost.fastcgi_dir|default(false) %}
+  <Directory "{{ vhost.fastcgi_dir }}">
+    Options +ExecCGI
+    AllowOverride All
+    SetHandler fastcgi-script
+    Require all granted
+    AuthBasicAuthoritative Off
+  </Directory>
+
+  AllowEncodedSlashes On
+  ServerSignature Off
+{% endif %}
+
+{% if vhost.suexec_user_group|default(false) %}
+  SuexecUserGroup {{ vhost.suexec_user_group }}
+{% endif %}
+
+{% if vhost.passenger_app_root|default(false) %}
+  PassengerAppRoot {{ vhost.passenger_app_root }}
+{% endif %}
+{% if vhost.passenger_app_env|default(false) %}
+  PassengerAppEnv {{ vhost.passenger_app_env }}
+{% endif %}
+{% if vhost.passenger_ruby|default(false) %}
+  PassengerRuby {{ vhost.passenger_ruby }}
+{% endif %}
+{% if vhost.passenger_min_instances|default(false) %}
+  PassengerMinInstances {{ vhost.passenger_min_instances }}
+{% endif %}
+{% if vhost.passenger_start_timeout|default(false) %}
+  PassengerStartTimeout {{ vhost.passenger_start_timeout }}
+{% endif %}
+{% if vhost.passenger_pre_start |default(false) %}
+  PassengerPreStart {{ vhost.passenger_pre_start  }}
+{% endif %}
+{% if vhost.passenger_user|default(false) %}
+  PassengerUser {{ vhost.passenger_user }}
+{% endif %}
+{% if vhost.passenger_high_performance |default(false) %}
+  {% if vhost.passenger_high_performance|string in ['true', 'True', '1', 1, 'on', 'On', ] %}
+    {% set v = 'On' %}{% else %}{% set v = 'Off' %}
+  {% endif %}
+  PassengerHighPerformance {{ v }}
+{% endif %}
+{% if vhost.passenger_nodejs|default(false) %}
+  PassengerNodejs {{ vhost.passenger_nodejs }}
+{% endif %}
+{% if vhost.passenger_sticky_sessions|default(false) %}
+  {% if vhost.passenger_sticky_sessions|string in ['true', 'True', '1', 1, 'on', 'On', ] %}
+    {% set v = 'On' %}{% else %}{% set v = 'Off' %}
+  {% endif %}
+  PassengerStickySessions {{ v }}
+{% endif %}
+{% if vhost.passenger_startup_file|default(false) %}
+  PassengerStartupFile {{ vhost.passenger_startup_file }}
+{% endif %}
+
+{% if vhost.add_default_charset|default(false) %}
+  AddDefaultCharset {{ vhost.add_default_charset }}
+{% endif %}
+
+{% if vhost.modsec_disable_vhost|default(false) or vhost.modsec_disable_ids|default(false) or
+      vhost.modsec_disable_ips|default(false) or vhost.modsec_disable_msgs|default(false) or
+      vhost.modsec_disable_tags|default(false) or vhost.modsec_audit_log_destination|default(false) %}
+  <IfModule mod_security2.c>
+  {% if vhost.modsec_disable_vhost|default(false) %}
+    SecRuleEngine Off
+  {% endif %}
+  {% if vhost.modsec_audit_log_destination|default(false) %}
+    SecAuditLog "{{ vhost.modsec_audit_log_destination  }}"
+  {% endif %}
+  {% if vhost.modsec_disable_ids|default(false) is mapping %}
+    {% for location, rules in (vhost.modsec_disable_ids|default({})).iteritems() %}
+    <LocationMatch {{ location }}>
+      {% for rule in rules|default([]) %}
+      SecRuleRemoveById {{ rule }}
+      {% endfor %}
+    </LocationMatch>
+    {% endfor %}
+  {% elif vhost.modsec_disable_ids|default(false) %}
+    {% for rule in vhost.modsec_disable_ids|default([]) %}
+    SecRuleRemoveById {{ rule }}
+    {% endfor %}
+  {% endif %}
+  {% if vhost.modsec_disable_ips|default(false) %}
+    SecRule REMOTE_ADDR "{{ vhost.modsec_disable_ips|join(',') }}" "nolog,allow,id:1234123455"
+    SecAction  "phase:2,pass,nolog,id:1234123456"
+  {% endif %}
+  {% if vhost.modsec_disable_msgs|default(false) is mapping %}
+    {% for location, rules in (vhost.modsec_disable_msgs|default({})).iteritems() %}
+    <LocationMatch {{ location }}>
+      {% for rule in rules|default([]) %}
+      SecRuleRemoveByMsg "{{ rule }}"
+      {% endfor %}
+    </LocationMatch>
+    {% endfor %}
+  {% elif vhost.modsec_disable_msgs|default(false) %}
+    {% for rule in vhost.modsec_disable_msgs|default([]) %}
+    SecRuleRemoveByMsg {{ rule }}
+    {% endfor %}
+  {% endif %}
+  {% if vhost.modsec_disable_tags|default(false) is mapping %}
+    {% for location, rules in (vhost.modsec_disable_tags|default({})).iteritems() %}
+    <LocationMatch {{ location }}>
+      {% for rule in rules|default([]) %}
+      SecRuleRemoveByTag "{{ rule }}"
+      {% endfor %}
+    </LocationMatch>
+    {% endfor %}
+  {% elif vhost.modsec_disable_tags|default(false) %}
+    {% for rule in vhost.modsec_disable_tags|default([]) %}
+    SecRuleRemoveByTag {{ rule }}
+    {% endfor %}
+  {% endif %}
+  {% if vhost.modsec_body_limit|default(false) %}
+    SecRequestBodyLimit {{ vhost.modsec_body_limit }}
+  {% endif %}
+{% endif %}
+  </IfModule>
+
+{% if vhost.filters|default(false) %}
+  ## Filter module rules
+  ## as per http://httpd.apache.org/docs/2.2/mod/mod_filter.html
+  {% for filter in vhost.filters|default([]) %}
+  {{ filter }}
+  {% endfor %}
+{% endif %}
+
+{% if vhost.keepalive|default(false) %}
+  KeepAlive {{ vhost.keepalive }}
+{% endif %}
+{% if vhost.keepalive_timeout|default(false) %}
+  KeepAliveTimeout {{ vhost.keepalive_timeout }}
+{% endif %}
+{% if vhost.max_keepalive_requests|default(false) %}
+  MaxKeepAliveRequests {{ vhost.max_keepalive_requests }}
+{% endif %}
+
+{% if vhost.cas_enabled|default(false) %}
+  {% if vhost.cas_cookie_path|default(false) %}
+  CASCookiePath {{ vhost.cas_cookie_path }}
+  {% endif %}
+  {% if vhost.cas_login_url|default(false) %}
+  CASLoginURL {{ vhost.cas_login_url }}
+  {% endif %}
+  {% if vhost.cas_validate_url|default(false) %}
+  CASValidateURL {{ vhost.cas_validate_url }}
+  {% endif %}
+  {% if vhost.cas_version|default(false) %}
+  CASVersion {{ vhost.cas_version }}
+  {% endif %}
+  {% if vhost.cas_debug|default(false) %}
+  CASDebug {{ vhost.cas_debug }}
+  {% endif %}
+  {% if vhost.cas_certificate_path|default(false) %}
+  CASCertificatePath {{ vhost.cas_certificate_path }}
+  {% endif %}
+  {% if vhost.cas_proxy_validate_url|default(false) %}
+  CASProxyValidateURL {{ vhost.cas_proxy_validate_url }}
+  {% endif %}
+  {% if vhost.cas_validate_depth|default(false) %}
+  CASValidateDepth {{ vhost.cas_validate_depth }}
+  {% endif %}
+  {% if vhost.cas_root_proxied_as|default(false) %}
+  CASRootProxiedAs {{ vhost.cas_root_proxied_as }}
+  {% endif %}
+  {% if vhost.cas_cookie_entropy|default(false) %}
+  CASCookieEntropy {{ vhost.cas_cookie_entropy }}
+  {% endif %}
+  {% if vhost.cas_timeout|default(false) %}
+  CASTimeout {{ vhost.cas_timeout }}
+  {% endif %}
+  {% if vhost.cas_idle_timeout|default(false) %}
+  CASIdleTimeout {{ vhost.cas_idle_timeout }}
+  {% endif %}
+  {% if vhost.cas_cache_clean_interval|default(false) %}
+  CASCacheCleanInterval {{ vhost.cas_cache_clean_interval }}
+  {% endif %}
+  {% if vhost.cas_cookie_domain|default(false) %}
+  CASCookieDomain {{ vhost.cas_cookie_domain }}
+  {% endif %}
+  {% if vhost.cas_cookie_http_only|default(false) %}
+  CASCookieHttpOnly {{ vhost.cas_cookie_http_only }}
+  {% endif %}
+  {% if vhost.cas_authoritative|default(false) %}
+  CASAuthoritative {{ vhost.cas_authoritative }}
+  {% endif %}
+  {% if vhost.cas_sso_enabled|default(false) %}
+  CASSSOEnabled On
+  {% endif %}
+  {% if vhost.cas_validate_saml|default(false) %}
+  CASValidateSAML On
+  {% endif %}
+  {% if vhost.cas_attribute_prefix|default(false) %}
+  CASAttributePrefix {{ vhost.cas_attribute_prefix }}
+  {% endif %}
+  {% if vhost.cas_attribute_delimiter|default(false) %}
+  CASAttributeDelimiter {{ vhost.cas_attribute_delimiter }}
+  {% endif %}
+  {% if vhost.cas_scrub_request_headers|default(false) %}
+  CASAttributeDelimiter On
+  {% endif %}
+{% endif %}
+</VirtualHost>

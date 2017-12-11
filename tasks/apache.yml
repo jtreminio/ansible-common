@@ -1,0 +1,31 @@
+- set_fact:
+    apache_mods_enabled: "{{ apache.modules | modify_list('(.*)','\\1.load') }}"
+    apache_create_vhosts: false
+    apache_logroot: '/var/log/httpd'
+
+- apt_repository:
+    repo: ppa:ondrej/apache2
+
+- name: install apache
+  apt:
+    pkg: apache2
+    state: present
+    update_cache: yes
+
+- include_vars:
+    file: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
+
+- purge_dir:
+    dir: "{{ apache_server_root }}/mods-enabled"
+    keep: "{{ (apache.modules | modify_list('(.*)','\\1.conf')) | list_append(apache.modules | modify_list('(.*)','\\1.load')) }}"
+
+- include_role:
+    name: geerlingguy.apache
+
+- include_tasks: apache/vhost.yml
+  loop_control:
+    loop_var: apache_vhost
+  vars:
+    index: "{{ apache_vhost.0 }}"
+    vhost: "{{ apache_vhost.1 }}"
+  with_indexed_items: "{{ apache.vhosts }}"
