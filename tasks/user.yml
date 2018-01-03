@@ -1,6 +1,6 @@
 ---
 
-- include: group.yml
+- include_tasks: group.yml
   loop_control:
     loop_var: user_groups
   vars:
