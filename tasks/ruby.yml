@@ -1,0 +1,27 @@
+---
+
+- set_fact:
+    rvm1_rubies: "{{ ruby.versions|json_query('[].version') }}"
+    rvm1_bundler_install: false
+    rvm1_install_path: '/usr/local/rvm'
+    rvm1_install_flags: '--auto-dotfiles'
+    rvm1_user: 'root'
+
+- include_tasks: ruby/version.yml
+  loop_control:
+    loop_var: l_ruby_version
+  vars:
+    ruby_v: "{{ l_ruby_version }}"
+  with_items: "{{ ruby.versions|d([]) }}"
+
+- include_role:
+    name: rvm_io.ruby
+
+- include_tasks: ruby/gem.yml
+  loop_control:
+    loop_var: l_ruby_gem
+  vars:
+    ruby_gem: "{{ l_ruby_gem }}"
+  with_items: "{{ ruby.gems|d([]) }}"
+
+# todo: configure centos support

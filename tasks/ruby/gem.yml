@@ -1,0 +1,6 @@
+---
+
+- gem:
+    name: "{{ ruby_gem.split('@')[0] }}"
+    version: "{{ (ruby_gem.split('@')[1])|d('') }}"
+    user_install: no
