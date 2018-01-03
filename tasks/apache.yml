@@ -1,3 +1,5 @@
+---
+
 - set_fact:
     apache_mods_enabled: "{{ apache.modules | modify_list('(.*)','\\1.load') }}"
     apache_create_vhosts: false
