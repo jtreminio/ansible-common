@@ -1,0 +1,16 @@
+---
+
+- set_fact:
+    python_virtualenv: { }
+    virt_env_install: "{{ virtenv.virtualenv|d(0) }}"
+    python_version: "python{{ virtenv.version|regex_replace('python') }}"
+
+- set_fact:
+    python_virtualenv:
+      path: "{{ virtenv.path }}"
+      python: "{{ python_version }}"
+    when: virt_env_install|int == 1
+
+- name: merge previously defined virtenvs with new virtenv
+  set_fact:
+    python_virtualenvs: "{{ (python_virtualenvs|d([]))|list_append(python_virtualenv) }}"
