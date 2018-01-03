@@ -1,0 +1,10 @@
+---
+
+- set_fact:
+    npm_package:
+      name: "{{ npm_p.split('@')[0] }}"
+      version: "{{ (npm_p.split('@')[1])|d('') }}"
+
+- name: merge previously defined npm packages with new npm package list
+  set_fact:
+    nodejs_npm_global_packages: "{{ (nodejs_npm_global_packages|d([]))|list_append(npm_package) }}"

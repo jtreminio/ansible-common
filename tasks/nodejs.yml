@@ -1,0 +1,14 @@
+---
+
+- set_fact:
+    nodejs_version: "{{ nodejs.settings.version }}"
+
+- include_tasks: nodejs/npm_package.yml
+  loop_control:
+    loop_var: l_npm_package
+  vars:
+    npm_p: "{{ l_npm_package }}"
+  with_items: "{{ nodejs.npm_packages|d([]) }}"
+
+- include_role:
+    name: geerlingguy.nodejs
