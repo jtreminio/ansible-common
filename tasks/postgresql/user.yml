@@ -1,0 +1,10 @@
+---
+
+- set_fact:
+    p_user:
+      name: "{{ psql_user.username }}"
+      password: "{{ psql_user.password|d('') }}"
+
+- name: merge previously defined mysql_users with new mysql_user
+  set_fact:
+    postgresql_users: "{{ (postgresql_users|d([]))|list_append(p_user) }}"

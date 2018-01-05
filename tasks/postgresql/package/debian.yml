@@ -1,0 +1,22 @@
+---
+
+- set_fact:
+    postgresql_version: "{{ postgresql.settings.version|d('9.6') }}"
+
+- set_fact:
+    postgresql_packages:
+      - "postgresql-{{ postgresql_version }}"
+      - "postgresql-contrib-{{ postgresql_version }}"
+      - libpq-dev
+    postgresql_data_dir: "/var/lib/postgresql/{{ postgresql_version }}/main"
+    postgresql_bin_path: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
+    postgresql_config_path: "/etc/postgresql/{{ postgresql_version }}/main"
+
+- name: Add PostgreSQL Apt Key
+  apt_key:
+    keyserver: hkp://keyserver.ubuntu.com:80
+    id: 'B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8'
+    state: present
+
+- apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"

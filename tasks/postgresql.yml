@@ -1,0 +1,32 @@
+---
+
+- set_fact:
+    postgresql_locales: "{{ postgresql.settings.locales|d(['en_US.UTF-8']) }}"
+
+- include_tasks: postgresql/package/debian.yml
+
+- include_tasks: postgresql/database.yml
+  loop_control:
+    loop_var: l_postgresql_db
+  vars:
+    psql_database: "{{ l_postgresql_db }}"
+  with_items: "{{ postgresql.databases }}"
+
+- include_tasks: postgresql/user.yml
+  loop_control:
+    loop_var: l_postgresql_user
+  vars:
+    psql_user: "{{ l_postgresql_user }}"
+  with_items: "{{ postgresql.users }}"
+
+- include_tasks: postgresql/privilege.yml
+  loop_control:
+    loop_var: l_postgresql_privilege
+  vars:
+    psql_privilege: "{{ l_postgresql_privilege }}"
+  with_items: "{{ postgresql.privileges }}"
+
+- include_role:
+    name: geerlingguy.postgresql
+
+# todo: configure centos support
