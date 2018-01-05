@@ -1,0 +1,12 @@
+---
+
+- set_fact:
+    m_user:
+      name: "{{ mysql_user.user.split('@')[0] }}"
+      host: "{{ (mysql_user.user.split('@')[1])|d('localhost') }}"
+      password: "{{ mysql_user.password }}"
+      priv: "{{ mysql_user.privileges|d([''])|join('/') }}"
+
+- name: merge previously defined mysql_users with new mysql_user
+  set_fact:
+    mysql_users: "{{ (mysql_users|d([]))|list_append(m_user) }}"
