@@ -1,0 +1,39 @@
+---
+
+- include_vars:
+    file: "{{ playbook_dir }}/roles/greendayonfire.mongodb/defaults/main.yml"
+
+- set_fact:
+    mongodb_security_authorization: "enabled"
+    mongodb_version: "{{ mongodb.settings.version }}"
+    mongodb_net_bindip: "{{ mongodb.settings.bind_ip|d('127.0.0.1') }}"
+    mongodb_net_port: "{{ mongodb.settings.port|d('27017') }}"
+    mongodb_root_admin_name: "{{ mongodb.settings.root_admin_user }}"
+    mongodb_root_admin_password: "{{ mongodb.settings.root_admin_password }}"
+    mongodb_user_admin_name: "{{ mongodb.settings.user_admin_user }}"
+    mongodb_user_admin_password: "{{ mongodb.settings.user_admin_password }}"
+
+- set_fact:
+    mongodb_root_backup_password: "{{ mongodb_root_admin_password }}"
+
+- include_tasks: mongodb/database.yml
+  loop_control:
+    loop_var: l_mongodb_database
+  vars:
+    mongodb_db: "{{ l_mongodb_database }}"
+  with_items: "{{ mongodb.databases }}"
+
+- command: "openssl rand -base64 -out {{ mongodb_security_keyfile }} 741"
+  args:
+    creates: "{{ mongodb_security_keyfile }}"
+
+- file:
+    path: "{{ mongodb_security_keyfile }}"
+    owner: root
+    group: root
+    mode: 0644
+
+- include_role:
+    name: greendayonfire.mongodb
+
+# todo: configure centos support
