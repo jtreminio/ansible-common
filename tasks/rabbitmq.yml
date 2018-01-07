@@ -1,0 +1,16 @@
+---
+
+- set_fact:
+    rabbitmq_plugins: "{{ rabbitmq.plugins|d([]) }}"
+    rabbitmq_vhosts: "{{ rabbitmq.vhosts|d([]) }}"
+    rabbitmq_users: []
+
+- include_role:
+    name: Stouts.rabbitmq
+
+- include_tasks: rabbitmq/user.yml
+  loop_control:
+    loop_var: l_r_user
+  vars:
+    r_user: "{{ l_r_user }}"
+  with_items: "{{ rabbitmq.users|d([]) }}"
