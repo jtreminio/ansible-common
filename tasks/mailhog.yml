@@ -1,0 +1,17 @@
+---
+
+- set_fact:
+    mailhog_install_dir: "{{ mailhog.settings.path }}"
+
+- include_tasks: firewall_add.yml
+  vars:
+    rule:
+      protocol: tcp
+      port: "{{ item }}"
+      action: accept
+  with_items:
+    - 1025
+    - 8025
+
+- include_role:
+    name: geerlingguy.mailhog
