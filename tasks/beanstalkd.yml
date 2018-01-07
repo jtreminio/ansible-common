@@ -1,0 +1,15 @@
+---
+
+- set_fact:
+    beanstalkd_listen_address: "{{ beanstalkd.settings.listenaddress }}"
+    beanstalkd_listen_port: "{{ beanstalkd.settings.listenport }}"
+
+- include_tasks: firewall_add.yml
+  vars:
+    rule:
+      protocol: tcp
+      port: "{{ beanstalkd_listen_port }}"
+      action: accept
+
+- include_role:
+    name: vpeltot.beanstalkd
