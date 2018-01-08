@@ -1,0 +1,18 @@
+---
+
+- set_fact:
+    solr_version: "{{ solr.settings.version }}"
+    solr_port: "{{ solr.settings.port|d(8983) }}"
+
+- include_tasks: firewall_add.yml
+  vars:
+    rule:
+      protocol: tcp
+      port: "{{ solr_port }}"
+      action: accept
+
+- include_role:
+    name: geerlingguy.java
+
+- include_role:
+    name: geerlingguy.solr

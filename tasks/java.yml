@@ -1,0 +1,27 @@
+---
+
+- set_fact:
+    java_version: "{{ java_version|d(8) }}"
+
+- block:
+  - block:
+    - set_fact:
+        java_packages:
+          - java-1.8.0-openjdk
+
+    when: "ansible_os_family == 'RedHat'"
+
+  - block:
+    - apt_repository:
+        repo: 'ppa:openjdk-r/ppa'
+
+    - set_fact:
+        java_packages:
+          - openjdk-8-jdk
+
+    when: "ansible_os_family == 'Debian'"
+
+  when: java_version | version_compare('8.0', '>=')
+
+- include_role:
+    name: geerlingguy.java
