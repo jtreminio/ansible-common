@@ -84,10 +84,10 @@
 {% endif %}
 
   ## Logging
-  {% set log_base = logroot ~ "/" ~ index_formatted ~ "-" ~ servername %}
+  {% set log_base = apache_logroot ~ "/" ~ index_formatted ~ "-" ~ servername %}
   ErrorLog "{{ log_base }}_error{{ (vhost.ssl|default(false)|int == 1) | ternary('_ssl', '') }}.log"
-  CustomLog "{{ log_base }}_access{{ (vhost.ssl|default(false)|int == 1) | ternary('_ssl', '') }}.log"
-  LogLevel {{ vhost.log_level }}
+  CustomLog "{{ log_base }}_access{{ (vhost.ssl|default(false)|int == 1) | ternary('_ssl', '') }}.log" combined
+  LogLevel {{ vhost.log_level|d('warn') }}
 
   ServerSignature Off
 
@@ -107,7 +107,6 @@
 {% for error_document in vhost.error_documents|default([]) %}
   ErrorDocument {{ error_document.error_code }} "{{ error_document.document }}"
 {% endfor %}
-</VirtualHost>
 
 {% if vhost.headers|default([]) %}
   ## Header rules
@@ -577,8 +576,8 @@
   {% if vhost.modsec_body_limit|default(false) %}
     SecRequestBodyLimit {{ vhost.modsec_body_limit }}
   {% endif %}
-{% endif %}
   </IfModule>
+{% endif %}
 
 {% if vhost.filters|default(false) %}
   ## Filter module rules
