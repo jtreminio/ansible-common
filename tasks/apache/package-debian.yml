@@ -1,0 +1,10 @@
+---
+
+- name: Add Apache2 Apt Key
+  apt_key:
+    keyserver: hkp://keyserver.ubuntu.com:80
+    id: '14AA40EC0831756756D7F66C4F4EA0AAE5267A6C'
+    state: present
+
+- apt_repository:
+    repo: ppa:ondrej/apache2

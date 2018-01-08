@@ -8,9 +8,7 @@
     apache_create_vhosts: false
     keep_conf_server: []
 
-- apt_repository:
-    repo: ppa:ondrej/apache2
-  when: ansible_os_family == 'Debian'
+- include_tasks: "apache/package-{{ ansible_os_family }}.yml"
 
 - include_vars:
     file: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
