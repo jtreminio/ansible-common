@@ -1,18 +1,12 @@
 ---
 
+- include_vars: "apache-{{ ansible_os_family|lower }}.yml"
+
 - set_fact:
     apache_version: "{{ apache.settings.version|d(2.4) }}"
     apache_mods_enabled: "{{ apache.modules | modify_list('(.*)', '\\1.load') }}"
     apache_create_vhosts: false
     keep_conf_server: []
-
-- set_fact:
-    apache_logroot: '/var/log/apache2'
-  when: ansible_os_family == 'Debian'
-
-- set_fact:
-    apache_logroot: '/var/log/httpd'
-  when: ansible_os_family == 'RedHat'
 
 - apt_repository:
     repo: ppa:ondrej/apache2
