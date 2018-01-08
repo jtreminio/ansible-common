@@ -2,7 +2,7 @@
 
 - set_fact:
     index_formatted: "{{ '%02d'|format(index|int) }}"
-    servername: "{{ vhost.servername }}"
+    servername: "{{ vhost.servername|d('default') }}"
 
 - template:
     src: "{{ role_path }}/templates/apache/vhost.j2"

@@ -6,7 +6,12 @@
     apache_version: "{{ apache.settings.version|d(2.4) }}"
     apache_mods_enabled: "{{ apache.modules | modify_list('(.*)', '\\1.load') }}"
     apache_create_vhosts: false
-    keep_conf_server: []
+    apache_vhosts: "{{ apache.vhosts }}"
+    apache_default_vhost: "{{ apache.settings.default_vhost|d(0) }}"
+
+- set_fact:
+    apache_vhosts: "{{ _apache_default_vhost|list_append(apache_vhosts) }}"
+  when: apache_default_vhost|int == 1
 
 - include_tasks: "apache/package-{{ ansible_os_family }}.yml"
 
@@ -38,7 +43,7 @@
   vars:
     index: "{{ apache_vhost.0 }}"
     vhost: "{{ apache_vhost.1 }}"
-  with_indexed_items: "{{ apache.vhosts }}"
+  with_indexed_items: "{{ apache_vhosts }}"
   when: apache_vhost_stat.stat.exists
 
 - include_role:
@@ -54,5 +59,14 @@
   vars:
     index: "{{ apache_vhost.0 }}"
     vhost: "{{ apache_vhost.1 }}"
-  with_indexed_items: "{{ apache.vhosts }}"
+  with_indexed_items: "{{ apache_vhosts }}"
   when: vhost_stat.stat.exists == false
+
+- copy:
+    src: "{{ role_path }}/files/webserver_landing.html"
+    dest: '/var/www/html/index.html'
+    owner: root
+    group: root
+    mode: 0644
+  when: apache_default_vhost|int == 1
+  changed_when: False

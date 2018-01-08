@@ -5,13 +5,13 @@
         keep_conf_vhost: []
 
     - set_fact:
-        keep_conf_vhost: "{{ keep_conf_vhost|list_append(('%02d'|format(index|int)) + '-' + vhost.servername + '.conf') }}"
+        keep_conf_vhost: "{{ keep_conf_vhost|list_append(('%02d'|format(index|int)) + '-' + vhost.servername|d('default') + '.conf') }}"
       loop_control:
         loop_var: apache_vhost
       vars:
         index: "{{ apache_vhost.0 }}"
         vhost: "{{ apache_vhost.1 }}"
-      with_indexed_items: "{{ apache.vhosts }}"
+      with_indexed_items: "{{ apache_vhosts }}"
 
     - purge_dir:
         dir: "{{ apache_server_root }}/sites-available"
