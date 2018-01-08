@@ -17,3 +17,13 @@
     dest: "{{ apache_server_root }}/sites-enabled/{{ index_formatted }}-{{ servername }}.conf"
     state: link
   notify: "{{ notify_apache_list }}"
+
+- include_tasks: ../firewall_add.yml
+  loop_control:
+    loop_var: loop_rule
+  vars:
+    rule:
+      protocol: tcp
+      port: "{{ loop_rule|regex_replace('[A-Za-z]+[0-9]*')|regex_replace('[\\s*]')|regex_replace('[^\\d ]') }}"
+      action: accept
+  with_items: "{{ vhost.port }}"

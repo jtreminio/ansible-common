@@ -18,6 +18,16 @@
 - include_vars:
     file: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
 
+- include_tasks: firewall_add.yml
+  vars:
+    rule:
+      protocol: tcp
+      port: "{{ item }}"
+      action: accept
+  with_items:
+    - 80
+    - 443
+
 - file:
     path: "{{ apache_logroot }}"
     state: directory
