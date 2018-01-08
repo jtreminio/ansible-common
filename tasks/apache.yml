@@ -1,28 +1,44 @@
 ---
 
 - set_fact:
-    apache_mods_enabled: "{{ apache.modules | modify_list('(.*)','\\1.load') }}"
+    apache_version: "{{ apache.settings.version|d(2.4) }}"
+    apache_mods_enabled: "{{ apache.modules | modify_list('(.*)', '\\1.load') }}"
     apache_create_vhosts: false
+    keep_conf_server: []
+
+- set_fact:
+    apache_logroot: '/var/log/apache2'
+  when: ansible_os_family == 'Debian'
+
+- set_fact:
     apache_logroot: '/var/log/httpd'
+  when: ansible_os_family == 'RedHat'
 
 - apt_repository:
     repo: ppa:ondrej/apache2
-
-- name: install apache
-  apt:
-    pkg: apache2
-    state: present
-    update_cache: yes
+  when: ansible_os_family == 'Debian'
 
 - include_vars:
     file: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
 
-- purge_dir:
-    dir: "{{ apache_server_root }}/mods-enabled"
-    keep: "{{ (apache.modules | modify_list('(.*)','\\1.conf')) | list_append(apache.modules | modify_list('(.*)','\\1.load')) }}"
+- file:
+    path: "{{ apache_logroot }}"
+    state: directory
+    owner: root
+    group: root
 
-- include_role:
-    name: geerlingguy.apache
+- stat:
+    path: "{{ apache_server_root }}/sites-available"
+  register: apache_vhost_stat
+
+- stat:
+    path: "{{ apache_server_root }}/mods-available"
+  register: apache_mods_stat
+
+- set_fact:
+    notify_apache_list: []
+
+- include_tasks: apache/purge.yml
 
 - include_tasks: apache/vhost.yml
   loop_control:
@@ -31,3 +47,20 @@
     index: "{{ apache_vhost.0 }}"
     vhost: "{{ apache_vhost.1 }}"
   with_indexed_items: "{{ apache.vhosts }}"
+  when: apache_vhost_stat.stat.exists
+
+- include_role:
+    name: geerlingguy.apache
+
+- set_fact:
+    notify_apache_list:
+      - restart apache
+
+- include_tasks: apache/vhost.yml
+  loop_control:
+    loop_var: apache_vhost
+  vars:
+    index: "{{ apache_vhost.0 }}"
+    vhost: "{{ apache_vhost.1 }}"
+  with_indexed_items: "{{ apache.vhosts }}"
+  when: vhost_stat.stat.exists == false
