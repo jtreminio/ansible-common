@@ -1,0 +1,18 @@
+---
+
+- cron:
+    name: "{{ item.split('=')[0] }}"
+    env: yes
+    value: "{{ item.split('=')[1:][0] }}"
+  with_items: "{{ job.environment|d([]) }}"
+
+- cron:
+    name: "{{ job.name }}"
+    user: "{{ job.user }}"
+    job: "{{ job.command }}"
+    minute: "{{ (job.minute == '') | ternary('*', job.minute) }}"
+    hour: "{{ (job.hour == '') | ternary('*', job.hour) }}"
+    weekday: "{{ (job.weekday == '') | ternary('*', job.weekday) }}"
+    month: "{{ (job.month == '') | ternary('*', job.month) }}"
+    day: "{{ (job.monthday == '') | ternary('*', job.monthday) }}"
+
