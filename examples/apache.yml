@@ -1,0 +1,446 @@
+apache:
+    install: 1
+    settings:
+        version: 2.4
+        default_vhost: true
+    modules:
+        - alias
+        - authz_core
+        - authz_host
+        - autoindex
+        - deflate
+        - dir
+        - mime
+        - mpm_event
+        - negotiation
+        - proxy
+        - proxy_http
+        - proxy_fcgi
+        - reqtimeout
+        - rewrite
+        - setenvif
+        - socache_shmcb
+        - ssl
+        - status
+    vhosts:
+        -
+            servername: awesome.dev
+            serveraliases:
+                - www.awesome.dev
+                - www.awesome.com
+            docroot: /var/www/awesome/web
+            port:
+                - '*:80'
+                - '[::]:80'
+            aliases:
+                -
+                    aliasmatch: '^/image/(.*)\.jpg$'
+                    path: '/files/jpg.images/$1.jpg'
+                -
+                    alias: '/image'
+                    path: '/ftp/pub/image'
+                -
+                    scriptaliasmatch: '^/cgi-bin(.*)'
+                    path: '/usr/local/share/cgi-bin$1'
+                -
+                    scriptalias: '/nagios/cgi-bin/'
+                    path: '/usr/lib/nagios/cgi-bin/'
+                -
+                    alias: '/nagios'
+                    path: '/usr/share/nagios/html'
+            itk:
+                user: 'someuser'
+                group: 'somegroup'
+                assignuseridexpr: value for assignuseridexpr
+                assigngroupidexpr: value for assigngroupidexpr
+                maxclientvhost: value for maxclientvhost
+                nice: value for nice
+                limituidrange: value for limituidrange
+                limitgidrange: value for limitgidrange
+            fallbackresource: '/index.php'
+            allow_encoded_slashes: 'on'
+            sections:
+                -
+                    provider: directory
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                    options:
+                        - Indexes
+                        - FollowSymlinks
+                        - MultiViews
+                    allow_override:
+                        - All
+                    require:
+                        enforce: 'any'
+                        requires:
+                            - 'ip 1.2.3.4'
+                            - 'not host host.example.com'
+                            - 'user xyz'
+                    auth_name: 'Kerberos Login'
+                    auth_type: 'Kerberos'
+                    auth_require: 'valid-user'
+                    addhandlers:
+                        -
+                            handler: 'cgi-script'
+                            extensions:
+                                - '.cgi'
+                                - '(app_dev|config)\.php$'
+                                - '(app)\.php$'
+                    php_flags:
+                        log_errors: on
+                    php_values:
+                        xdebug.remote_handler: dbgp
+                    additional_includes:
+                        - 'foobar'
+                        - 'bamzam'
+                    error_documents:
+                        -
+                            'error_code': '503'
+                            'document': '/service-unavail'
+                    dav: 'On'
+                    dav_depth_infinity: 1
+                    dav_min_timeout: 123
+                    rewrites:
+                        -
+                            comment: 'Permalink Rewrites'
+                            rewrite_base: '/'
+                        -
+                            rewrite_rule:
+                                - '^index\.php$ - [L]'
+                        -
+                            rewrite_cond:
+                                - '%{REQUEST_FILENAME} !-f'
+                                - '%{REQUEST_FILENAME} !-d'
+                            rewrite_rule:
+                                - '. /index.php [L]'
+                    setenv:
+                        - setenv1
+                        - setenv2
+                -
+                    provider: directorymatch
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                -
+                    provider: location
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                -
+                    provider: locationmatch
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                -
+                    provider: files
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                -
+                    provider: filesmatch
+                    path: (app_dev|config)\.php$
+                    sethandler: 'proxy:fcgi://127.0.0.1:9000'
+                    setenv:
+                        - 'APP_ENV dev'
+                -
+                    provider: filesmatch
+                    path: app\.php$
+                    sethandler: 'proxy:fcgi://127.0.0.1:9000'
+                    setenv:
+                        - 'APP_ENV prod'
+                -
+                    provider: filesmatch
+                    path: \.php$
+                    sethandler: 'proxy:fcgi://127.0.0.1:9000'
+                -
+                    provider: proxy
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+                -
+                    provider: proxymatch
+                    path: /var/www/awesome/web
+                    headers:
+                        - header_1
+                        - header_2
+                    directoryindex: 'index.php app.dev'
+            additional_includes:
+                - '/custom/path/include'
+                - '/custom/path/include2'
+            log_level: warn
+            actions:
+                -
+                    mime: image/gif
+                    script: /cgi-bin/images.cgi
+                -
+                    mime: application/x-httpd-php
+                    script: modules/libphp5.so
+            block:
+                - '.*\.(svn|git|bzr|hg|ht)/.*'
+            error_documents:
+                -
+                    error_code: '503'
+                    document: '/service-unavail'
+                -
+                    error_code: '407'
+                    document: 'https://example.com/proxy/login'
+            headers:
+                - 'set Content-Type "text/plain" "expr=-z %{CONTENT_TYPE}"'
+                - 'set MyHeader "%D %t"'
+                - 'echo ^TS'
+            request_headers:
+                - 'set Content-Type "text/plain" "expr=-z %{CONTENT_TYPE}"'
+                - 'set MyHeader "%D %t"'
+                - 'echo ^TS'
+            proxy_pass:
+                -
+                    path: '/a'
+                    url: 'http://backend-a/'
+                -
+                    path: '/b'
+                    url: 'http://backend-b/'
+                    keywords:
+                        - 'nocanon'
+                        - 'interpolate'
+                -
+                    path: '/c'
+                    url: 'http://backend-a/c'
+                    params:
+                        max: 20
+                        ttl: 120
+                        retry: 300
+                -
+                    path: '/l'
+                    url: 'http://backend-xy'
+                    reverse_urls:
+                        - 'http://backend-x'
+                        - 'http://backend-y'
+                -
+                    path: '/d'
+                    url: 'http://backend-a/d'
+                    params:
+                        retry: '0'
+                        timeout: '5'
+                -
+                    path: '/e'
+                    url: 'http://backend-a/e'
+                    params:
+                        retry: '0'
+                        timeout: '5'
+                    keywords:
+                        - 'nocanon'
+                        - 'interpolate'
+                -
+                    path: '/f'
+                    url: 'http://backend-f/'
+                    setenv:
+                        - 'proxy-nokeepalive 1'
+                        - 'force-proxy-request-1.0 1'
+                    keywords:
+                        - 'nocanon'
+                        - 'interpolate'
+                -
+                    path: '/g'
+                    url: 'http://backend-g/'
+                    reverse_cookies:
+                        -
+                            path: '/g'
+                            url: 'http://backend-g/'
+                        -
+                            domain: 'http://backend-g'
+                            url: 'http:://backend-g'
+                -
+                    path: '/h'
+                    url: 'http://backend-h/h'
+                    no_proxy_uris:
+                        - '/h/admin'
+                        - '/h/server-status'
+            proxy_pass_match:
+                -
+                    path: '/a'
+                    url: 'http://backend-a/'
+                    keywords:
+                        - 'noquery'
+                        - 'interpolate'
+                    no_proxy_uris:
+                        - '/a/foo'
+                        - '/a/bar'
+                    no_proxy_uris_match:
+                        - '/a/foomatch'
+                    params:
+                        retry: '0'
+                        timeout: '5'
+                    setenv:
+                        - 'proxy-nokeepalive 1'
+                        - 'force-proxy-request-1.0 1'
+            proxy_dest: '/'
+            no_proxy_uris:
+                - '/a/foo'
+                - '/a/bar'
+            proxy_dest_match: '/'
+            no_proxy_uris_match:
+                - '/a/foomatch'
+            proxy_dest_reverse_match: '/'
+            rack_base_uris:
+                - '/rackapp1'
+            passenger_base_uris:
+                - '/passengerapp1'
+            redirect_source:
+                - '/images'
+                - '/downloads'
+            redirect_dest:
+                - 'http://img.example.com/'
+                - 'http://downloads.example.com/'
+            redirect_status:
+                - 'temp'
+                - 'permanent'
+            redirectmatch_status:
+                - '404'
+                - '404'
+            redirectmatch_regexp:
+                - '\.git(/.*|$)/'
+                - '\.svn(/.*|$)'
+            redirectmatch_dest:
+                - 'http://www.example.com/1'
+                - 'http://www.example.com/2'
+            rewrites:
+                -
+                    comment: 'Lynx or Mozilla v1/2'
+                    rewrite_cond:
+                        - '%{HTTP_USER_AGENT} ^Lynx/ [OR]'
+                        - '%{HTTP_USER_AGENT} ^Mozilla/[12]'
+                    rewrite_rule:
+                        - '^index\.html$ welcome.html'
+                -
+                    comment: 'Internet Explorer'
+                    rewrite_cond:
+                        - '%{HTTP_USER_AGENT} ^MSIE'
+                    rewrite_rule:
+                        - '^index\.html$ /index.IE.html [L]'
+                -
+                    rewrite_base: '/apps/'
+                    rewrite_rule:
+                        - '^index\.cgi$ index.php'
+                        - '^index\.html$ index.php'
+                        - '^index\.asp$ index.html'
+                -
+                    comment: 'Rewrite to lower case'
+                    rewrite_cond:
+                        - '%{REQUEST_URI} [A-Z]'
+                    rewrite_map:
+                        - 'lc int:tolower'
+                    rewrite_rule:
+                        - '(.*) ${lc:$1} [R=301,L]'
+            rewrite_inherit: true
+            rewrite_base: '/'
+            scriptaliases:
+                -
+                    alias: '/myscript'
+                    path: '/usr/share/myscript'
+                -
+                    aliasmatch: '^/foo(.*)'
+                    path: '/usr/share/fooscripts$1'
+            setenv:
+                - 'FOO=/bin/true'
+            setenvif:
+                - 'Authorization "(.*)" HTTP_AUTHORIZATION=$1'
+                - 'Request_URI "\.gif$" object_is_image=gif'
+            ssl: 0
+            ssl_cert: '/ssl/cert'
+            ssl_key: '/ssl/key'
+            ssl_chain: '/ssl/chain'
+            ssl_crl_path: '/ssl/crl'
+            ssl_crl: 'foo.crl'
+            ssl_certs_dir: '/ssl/certs'
+            ssl_protocol: 'SSLv2'
+            ssl_cipher: 'HIGH'
+            ssl_honorcipherorder: 'Off'
+            ssl_verify_client: 'optional'
+            ssl_verify_depth: '3'
+            ssl_options: '+ExportCertData'
+            ssl_openssl_conf_cmd: 'DHParameters "foo.pem"'
+            ssl_proxy_verify: 'require'
+            ssl_proxy_check_peer_cn: 'on'
+            ssl_proxy_check_peer_name: 'on'
+            ssl_proxy_check_peer_expire: 'on'
+            ssl_proxyengine: true
+            ssl_proxy_protocol: 'TLSv1.2'
+            auth_kerb: true
+            krb_method_negotiate: 'off'
+            krb_method_k5passwd: 'off'
+            krb_authoritative: 'off'
+            krb_auth_realms:
+                - 'EXAMPLE.ORG'
+                - 'EXAMPLE.NET'
+            krb_5keytab: '/tmp/keytab5'
+            krb_local_user_mapping: 'off'
+            http_protocol_options: 'Strict LenientMethods Allow0.9'
+            keepalive: 'on'
+            keepalive_timeout: '100'
+            max_keepalive_requests: '1000'
+            wsgi_application_group: '%{GLOBAL}'
+            wsgi_daemon_process: 'wsgi'
+            wsgi_daemon_process_options:
+                processes: '2'
+                threads: '15'
+                display-name: '%{GROUP}'
+            wsgi_import_script: '/var/www/demo.wsgi'
+            wsgi_import_script_options:
+                process-group: 'wsgi'
+                application-group: '%{GLOBAL}'
+            wsgi_process_group: 'wsgi'
+            wsgi_script_aliases:
+                '/': '/var/www/demo.wsgi'
+            wsgi_script_aliases_match:
+                '^/test/(^[/*)': '/var/www/demo.wsgi'
+            wsgi_pass_authorization: 'On'
+            fastcgi_server: 'localhost'
+            fastcgi_socket: '/tmp/fastcgi.socket'
+            fastcgi_dir: '/tmp'
+            fastcgi_idle_timeout: '120'
+            passenger_app_root: '/usr/share/myapp'
+            passenger_app_env: 'test'
+            passenger_ruby: '/usr/bin/ruby1.9.1'
+            passenger_min_instances: '1'
+            passenger_max_requests: '1000'
+            passenger_start_timeout: '600'
+            passenger_pre_start: 'http://localhost/myapp'
+            passenger_high_performance: true
+            passenger_user: 'sandbox'
+            passenger_nodejs: '/usr/bin/node'
+            passenger_sticky_sessions: true
+            passenger_startup_file: 'bin/www'
+            modsec_disable_ids:
+                - 90015
+                - 90016
+            modsec_disable_msgs:
+                '/location1':
+                    - 'Blind SQL Injection Attack'
+                    - 'Session Fixation Attack'
+
+            modsec_disable_tags:
+                '/location1':
+                    - 'WEB_ATTACK/SQL_INJECTION'
+                    - 'WEB_ATTACK/XSS'
+            filters:
+                - 'FilterDeclare  COMPRESS'
+                - 'FilterProvider COMPRESS DEFLATE resp=Content-Type $text/html'
+                - 'FilterChain    COMPRESS'
+                - 'FilterProtocol COMPRESS DEFLATE change=yes;byteranges=no'
+            custom_fragment: 'custom fragment goes here'
+            keepalive: 'on'
+            keepalive_timeout: '100'
+            max_keepalive_requests: '1000'
