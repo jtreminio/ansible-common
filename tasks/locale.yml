@@ -1,6 +1,6 @@
 ---
 
-- name: configure locales
+- name: locale - configure locales
   locale_gen:
     name: "{{ item }}"
     state: present

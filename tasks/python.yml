@@ -1,18 +1,22 @@
 ---
 
-- set_fact:
+- name: python - set Stouts.python variables
+  set_fact:
     python_ppa: ppa:deadsnakes/ppa
-    python_versions: "{{ python.versions|json_query('[].version') }}"
+    python_versions: "{{ python.versions | json_query('[].version') }}"
     python_install: "{{ python.packages|d([]) | modify_list('@','==') }}"
+    python_virtualenvs: []
 
-- include_tasks: python/virtualenv.yml
+- name: python - generate python_virtualenvs list
+  include_tasks: python/virtualenv.yml
   loop_control:
     loop_var: python_virtenv
   vars:
     virtenv: "{{ python_virtenv }}"
   with_items: "{{ python.versions|d([]) }}"
 
-- include_role:
+- name: python - include Stouts.python
+  include_role:
     name: Stouts.python
 
 # todo: configure centos support

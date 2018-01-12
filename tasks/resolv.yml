@@ -1,12 +1,17 @@
 ---
 
-- set_fact:
-    resolv: "{{ _resolv|combine(resolv) }}"
+- include_vars: resolv.yml
 
-- set_fact:
+- name: resolve - merge user-defined resolv data with default
+  set_fact:
+    resolv: "{{ _resolv | combine(resolv) }}"
+
+- name: resolve - set ahuffman.resolv variables
+  set_fact:
     resolv_nameservers: "{{ resolv.nameservers }}"
     resolv_domain: "{{ resolv.domainname }}"
     resolv_search: "{{ resolv.searchpath }}"
 
-- include_role:
+- name: resolve - include ahuffman.resolv
+  include_role:
     name: ahuffman.resolv

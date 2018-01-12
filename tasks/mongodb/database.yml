@@ -1,12 +1,23 @@
 ---
 
-- set_fact:
+- name: mongodb.database - set database/user list values, no password
+  set_fact:
     m_user:
       database: "{{ mongodb_db.name }}"
       name: "{{ mongodb_db.user }}"
-      password: "{{ mongodb_db.password }}"
       roles: "{{ mongodb_db.roles|d('readWrite') }}"
 
-- name: merge previously defined mongodb_users with new m_user
+- name: mongodb.database - set database password
   set_fact:
-    mongodb_users: "{{ (mongodb_users|d([]))|list_append(m_user) }}"
+    m_user_password:
+      password: "{{ mongodb_db.password }}"
+  no_log: true
+
+- set_fact:
+    m_user: "{{ m_user | deep_merge(m_user_password) }}"
+  no_log: true
+
+- name: mongodb.database - add database/user to master list
+  set_fact:
+    mongodb_users: "{{ (mongodb_users|d([])) | list_append(m_user) }}"
+  no_log: true

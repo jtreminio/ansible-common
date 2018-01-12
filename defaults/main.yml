@@ -4,14 +4,3 @@ _firewall_rule:
   action: accept
   port: ~
   protocol: tcp
-
-_resolv:
-  nameservers: ''
-  domainname: ''
-  searchpath: ''
-
-_apache_default_vhost:
-  -
-    docroot: /var/www/html
-    port:
-        - '*:80'

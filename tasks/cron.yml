@@ -1,6 +1,7 @@
 ---
 
-- include_tasks: cron/job.yml
+- name: cron - include cron/job.yml
+  include_tasks: cron/job.yml
   loop_control:
     loop_var: l_job
   vars:

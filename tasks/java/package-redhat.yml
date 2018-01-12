@@ -1,0 +1,6 @@
+---
+
+- name: java - set java 8.x package name
+  set_fact:
+    java_packages:
+      - java-1.8.0-openjdk

@@ -1,27 +1,17 @@
 ---
 
+- name: java - java key may not be present in config file
+  set_fact:
+    java_settings:
+      settings: {}
+
 - set_fact:
-    java_version: "{{ java_version|d(8) }}"
+    java: "{{ java|d({}) | deep_merge(java_settings) }}"
 
-- block:
-  - block:
-    - set_fact:
-        java_packages:
-          - java-1.8.0-openjdk
+- name: java - configure repo for Java 8.x
+  include_tasks: "java/package-{{ ansible_os_family }}.yml"
+  when: java.settings.version|d(8) | version_compare('8.0', '>=')
 
-    when: "ansible_os_family == 'RedHat'"
-
-  - block:
-    - apt_repository:
-        repo: 'ppa:openjdk-r/ppa'
-
-    - set_fact:
-        java_packages:
-          - openjdk-8-jdk
-
-    when: "ansible_os_family == 'Debian'"
-
-  when: java_version | version_compare('8.0', '>=')
-
-- include_role:
+- name: java - include geerlingguy.java
+  include_role:
     name: geerlingguy.java

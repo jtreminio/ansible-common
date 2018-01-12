@@ -1,10 +1,11 @@
 ---
 
 - set_fact:
-    index_formatted: "{{ '%02d'|format(index|int) }}"
+    index_formatted: "{{ '%02d' | format(index|int) }}"
     servername: "{{ vhost.servername|d('default') }}"
 
-- template:
+- name: apache.vhost - generate apache site config to sites-available
+  template:
     src: "{{ role_path }}/templates/apache/vhost.j2"
     dest: "{{ apache_server_root }}/sites-available/{{ index_formatted }}-{{ servername }}.conf"
     owner: root
@@ -12,18 +13,20 @@
     mode: 0644
   notify: "{{ notify_apache_list }}"
 
-- file:
+- name: apache.vhost - create symlink from apache sites-enabled to sites-available
+  file:
     src: "{{ apache_server_root }}/sites-available/{{ index_formatted }}-{{ servername }}.conf"
     dest: "{{ apache_server_root }}/sites-enabled/{{ index_formatted }}-{{ servername }}.conf"
     state: link
   notify: "{{ notify_apache_list }}"
 
-- include_tasks: ../firewall_add.yml
+- name: apache.vhost - add ports apache site listens on to firewall
+  include_tasks: ../firewall_add.yml
   loop_control:
     loop_var: loop_rule
   vars:
     rule:
       protocol: tcp
-      port: "{{ loop_rule|regex_replace('[A-Za-z]+[0-9]*')|regex_replace('[\\s*]')|regex_replace('[^\\d ]') }}"
+      port: "{{ loop_rule | regex_replace('[A-Za-z]+[0-9]*') | regex_replace('[\\s*]') | regex_replace('[^\\d ]') }}"
       action: accept
   with_items: "{{ vhost.port }}"

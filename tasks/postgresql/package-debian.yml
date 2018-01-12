@@ -1,9 +1,7 @@
 ---
 
-- set_fact:
-    postgresql_version: "{{ postgresql.settings.version|d('9.6') }}"
-
-- set_fact:
+- name: postgresql.package-debian - set variables for Debian packages
+  set_fact:
     postgresql_packages:
       - "postgresql-{{ postgresql_version }}"
       - "postgresql-contrib-{{ postgresql_version }}"
@@ -12,11 +10,12 @@
     postgresql_bin_path: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
     postgresql_config_path: "/etc/postgresql/{{ postgresql_version }}/main"
 
-- name: Add PostgreSQL Apt Key
+- name: postgresql.package-debian - add PostegreSQL apt key
   apt_key:
     keyserver: hkp://keyserver.ubuntu.com:80
     id: 'B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8'
     state: present
 
-- apt_repository:
+- name: postgresql.package-debian - add PostegreSQL apt repo
+  apt_repository:
     repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main"

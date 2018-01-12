@@ -1,14 +1,17 @@
 ---
 
-- set_fact:
+- name: rabbitmq - set Stouts.rabbitmq variables
+  set_fact:
     rabbitmq_plugins: "{{ rabbitmq.plugins|d([]) }}"
     rabbitmq_vhosts: "{{ rabbitmq.vhosts|d([]) }}"
     rabbitmq_users: []
 
-- include_role:
+- name: rabbitmq - include Stouts.rabbitmq
+  include_role:
     name: Stouts.rabbitmq
 
-- include_tasks: rabbitmq/user.yml
+- name: rabbitmq - add users
+  include_tasks: rabbitmq/user.yml
   loop_control:
     loop_var: l_r_user
   vars:

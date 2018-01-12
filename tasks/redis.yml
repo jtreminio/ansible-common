@@ -1,16 +1,19 @@
 ---
 
-- set_fact:
+- name: redis - set geerlingguy.redis variables
+  set_fact:
     redis_port: "{{ redis.settings.port|d(6379) }}"
 
-- include_tasks: firewall_add.yml
+- name: redis - add redis default port to firewall
+  include_tasks: firewall_add.yml
   vars:
     rule:
       protocol: tcp
       port: "{{ redis_port }}"
       action: accept
 
-- include_role:
+- name: redis - include geerlingguy.redis
+  include_role:
     name: geerlingguy.redis
 
 # todo: configure centos support

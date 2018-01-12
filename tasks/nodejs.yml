@@ -1,14 +1,18 @@
 ---
 
-- set_fact:
+- name: nodejs - set geerlingguy.nodejs variables
+  set_fact:
     nodejs_version: "{{ nodejs.settings.version }}"
+    nodejs_install_npm_user: root
 
-- include_tasks: nodejs/npm_package.yml
+- name: nodejs - construct nodejs_npm_global_packages list
+  include_tasks: nodejs/npm_package.yml
   loop_control:
     loop_var: l_npm_package
   vars:
     npm_p: "{{ l_npm_package }}"
   with_items: "{{ nodejs.npm_packages|d([]) }}"
 
-- include_role:
+- name: nodejs - include geerlingguy.nodejs
+  include_role:
     name: geerlingguy.nodejs

@@ -4,8 +4,9 @@
     - set_fact:
         keep_conf_vhost: []
 
-    - set_fact:
-        keep_conf_vhost: "{{ keep_conf_vhost|list_append(('%02d'|format(index|int)) + '-' + vhost.servername|d('default') + '.conf') }}"
+    - name: apache.purge - build list of vhosts to keep in sites-available
+      set_fact:
+        keep_conf_vhost: "{{ keep_conf_vhost | list_append(('%02d' | format(index|int)) + '-' + vhost.servername|d('default') + '.conf') }}"
       loop_control:
         loop_var: apache_vhost
       vars:
@@ -13,22 +14,23 @@
         vhost: "{{ apache_vhost.1 }}"
       with_indexed_items: "{{ apache_vhosts }}"
 
-    - purge_dir:
+    - name: apache.purge - keep only user-defined apache sites in sites-available
+      purge_dir:
         dir: "{{ apache_server_root }}/sites-available"
         keep: "{{ keep_conf_vhost }}"
       notify: "{{ notify_apache_list }}"
 
-    - purge_dir:
+    - name: apache.purge - keep only user-defined apache sites in sites-enabled
+      purge_dir:
         dir: "{{ apache_server_root }}/sites-enabled"
         keep: "{{ keep_conf_vhost }}"
       notify: "{{ notify_apache_list }}"
 
   when: apache_vhost_stat.stat.exists
 
-- block:
-    - purge_dir:
-        dir: "{{ apache_server_root }}/mods-enabled"
-        keep: "{{ (apache.modules | modify_list('(.*)', '\\1.conf')) | list_append(apache.modules | modify_list('(.*)', '\\1.load')) }}"
-      notify: "{{ notify_apache_list }}"
-
+- name: apache.purge - keep only user-defined apache modules
+  purge_dir:
+    dir: "{{ apache_server_root }}/mods-enabled"
+    keep: "{{ (apache.modules | modify_list('(.*)', '\\1.conf')) | list_append(apache.modules | modify_list('(.*)', '\\1.load')) }}"
+  notify: "{{ notify_apache_list }}"
   when: apache_mods_stat.stat.exists

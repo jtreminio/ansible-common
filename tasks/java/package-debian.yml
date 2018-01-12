@@ -1,0 +1,16 @@
+---
+
+- name: java.package-debian - set java 8.x package name
+  set_fact:
+    java_packages:
+      - openjdk-8-jdk
+
+- name: java.package-debian - add ppa:openjdk-r/ppa apt key
+  apt_key:
+    keyserver: hkp://keyserver.ubuntu.com:80
+    id: 'DA1A4A13543B466853BAF164EB9B1D8886F44E2A'
+    state: present
+
+- name: java.package-debian - add ppa:openjdk-r/ppa repo
+  apt_repository:
+    repo: ppa:openjdk-r/ppa

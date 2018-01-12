@@ -1,6 +1,6 @@
 ---
 
-- name: install packages
+- name: package - install user-defined packages
   package:
     name: "{{ item }}"
     state: present

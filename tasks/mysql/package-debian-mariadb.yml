@@ -1,0 +1,21 @@
+---
+
+- set_fact:
+    mariadb_version: "{{ mariadb.settings.version|d('10.2') }}"
+
+- name: mysql.package-debian-mariadb - set mysql_package to use MariaDB
+  set_fact:
+    mysql_packages:
+      - "mariadb-client-{{ mariadb_version }}"
+      - "mariadb-server-{{ mariadb_version }}"
+      - python-mysqldb
+
+- name: mysql.package-debian-mariadb - add MariaDB apt key
+  apt_key:
+    keyserver: hkp://keyserver.ubuntu.com:80
+    id: '0xF1656F24C74CD1D8'
+    state: present
+
+- name: mysql.package-debian-mariadb - add MariaDB apt repo
+  apt_repository:
+    repo: "deb http://mariadb.mirror.iweb.com/repo/{{ mariadb_version }}/ubuntu {{ ansible_distribution_release }} main"

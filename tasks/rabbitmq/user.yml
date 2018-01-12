@@ -1,16 +1,19 @@
 ---
 
-- set_fact:
+- name: rabbitmq.user - set user tags for admin and non-admin
+  set_fact:
     r_admin_tags:
       - administrator
     r_user_tags: "{{ r_user.tags|d([]) }}"
 
-- set_fact:
-    r_user_tags: "{{ r_admin_tags|list_append(r_user_tags)|unique|list }}"
+- name: rabbitmq.user - add admin tag to admin user
+  set_fact:
+    r_user_tags: "{{ r_admin_tags | list_append(r_user_tags) | unique | list }}"
   when: r_user.admin|int == 1
 
 # admin user
-- rabbitmq_user:
+- name: rabbitmq.user - create admin user
+  rabbitmq_user:
     user: "{{ r_user.name }}"
     password: "{{ r_user.password }}"
     vhost: /
@@ -22,7 +25,8 @@
   when: r_user.admin|int == 1
 
 # non-admin user
-- rabbitmq_user:
+- name: rabbitmq.user - create non-admin user
+  rabbitmq_user:
     user: "{{ r_user.name }}"
     password: "{{ r_user.password }}"
     permissions: "{{ r_user.permissions|d([]) }}"

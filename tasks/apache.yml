@@ -1,24 +1,30 @@
 ---
 
+- include_vars: apache.yml
 - include_vars: "apache-{{ ansible_os_family|lower }}.yml"
+- include_vars: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
 
-- set_fact:
+- name: apache - set geerlingguy.apache variables
+  set_fact:
     apache_version: "{{ apache.settings.version|d(2.4) }}"
-    apache_mods_enabled: "{{ apache.modules | modify_list('(.*)', '\\1.load') }}"
+    apache_mods_enabled: "{{ (apache.modules|d([])) | modify_list('(.*)', '\\1.load') }}"
     apache_create_vhosts: false
-    apache_vhosts: "{{ apache.vhosts }}"
+    apache_vhosts: "{{ apache.vhosts|d([]) }}"
+
+- name: apache - enable apache default vhost?
+  set_fact:
     apache_default_vhost: "{{ apache.settings.default_vhost|d(0) }}"
 
-- set_fact:
-    apache_vhosts: "{{ _apache_default_vhost|list_append(apache_vhosts) }}"
+- name: apache - add default vhost if enabled
+  set_fact:
+    apache_vhosts: "{{ _apache_default_vhost | list_append(apache_vhosts) }}"
   when: apache_default_vhost|int == 1
 
-- include_tasks: "apache/package-{{ ansible_os_family }}.yml"
+- name: apache - configure repo
+  include_tasks: "apache/package-{{ ansible_os_family }}.yml"
 
-- include_vars:
-    file: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
-
-- include_tasks: firewall_add.yml
+- name: apache - add apache default ports to firewall
+  include_tasks: firewall_add.yml
   vars:
     rule:
       protocol: tcp
@@ -28,26 +34,37 @@
     - 80
     - 443
 
-- file:
+- name: apache - ensure apache logroot directory exists
+  file:
     path: "{{ apache_logroot }}"
     state: directory
     owner: root
     group: root
 
-- stat:
+- name: apache - check if apache sites-available directory exists
+  stat:
     path: "{{ apache_server_root }}/sites-available"
   register: apache_vhost_stat
 
-- stat:
+- name: apache - check if apache mods-available directory exists
+  stat:
     path: "{{ apache_server_root }}/mods-available"
   register: apache_mods_stat
 
+# geerlingguy.apache attempts to ensure apache service is started right after
+# installation. If a vhost has broken config from a previous ansible run, then
+# geerlingguy.apache would fail to start apache service, failing ansible run.
+# We ensure all non-listed modules and vhosts are purged from config
+# directories before calling geerlingguy.apache, and do not add notify to
+# "restart apache" until after we run geerlingguy.apache
 - set_fact:
     notify_apache_list: []
 
-- include_tasks: apache/purge.yml
+- name: apache - purge apache mods and vhosts not in user-supplied config
+  include_tasks: apache/purge.yml
 
-- include_tasks: apache/vhost.yml
+- name: apache - create apache vhosts before calling geerlingguy.apache
+  include_tasks: apache/vhost.yml
   loop_control:
     loop_var: apache_vhost
   vars:
@@ -56,14 +73,22 @@
   with_indexed_items: "{{ apache_vhosts }}"
   when: apache_vhost_stat.stat.exists
 
-- include_role:
+- name: apache - include geerlingguy.apache
+  include_role:
     name: geerlingguy.apache
 
+# safe to notify apache service to restart if any vhosts and mods are
+# added/removed below
 - set_fact:
     notify_apache_list:
       - restart apache
 
-- include_tasks: apache/vhost.yml
+# we call apache/vhost.yml a second to generate config files on the initial
+# ansible run; sites-available/sites-enabled would not exist on the first
+# ansible run so the first apache/vhost.yml would not actually generate
+# anything!
+- name: apache - create apache vhosts after calling geerlingguy.apache
+  include_tasks: apache/vhost.yml
   loop_control:
     loop_var: apache_vhost
   vars:
@@ -72,11 +97,14 @@
   with_indexed_items: "{{ apache_vhosts }}"
   when: vhost_stat.stat.exists == false
 
-- copy:
+- name: apache - set html page for the default (IP-based) apache vhost
+  copy:
     src: "{{ role_path }}/files/webserver_landing.html"
-    dest: '/var/www/html/index.html'
+    dest: /var/www/html/index.html
     owner: root
     group: root
     mode: 0644
   when: apache_default_vhost|int == 1
   changed_when: False
+
+# todo: configure centos support

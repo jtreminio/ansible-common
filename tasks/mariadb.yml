@@ -1,22 +1,30 @@
 ---
 
-- set_fact:
-    mysql_root_password: "{{ mariadb.settings.root_password }}"
-    mysql_user_password: "{{ mariadb.settings.root_password }}"
+- name: mariadb - set geerlingguy.mysql variables
+  set_fact:
     mysql_root_password_update: yes
     mysql_user_password_update: yes
-    mysql_databases: "{{ mariadb.databases }}"
+    mysql_databases: "{{ mariadb.databases|d([]) }}"
 
-- include_tasks: mysql/package/debian-mariadb.yml
+- name: mariadb - set geerlingguy.mysql password variables
+  set_fact:
+    mysql_root_password: "{{ mariadb.settings.root_password }}"
+    mysql_user_password: "{{ mariadb.settings.root_password }}"
+  no_log: true
 
-- include_tasks: mysql/user.yml
+- name: mariadb - configure repo
+  include_tasks: "mysql/package-{{ ansible_os_family }}-mariadb.yml"
+
+- name: mariadb - create user list
+  include_tasks: mysql/user.yml
   loop_control:
     loop_var: l_mysql_user
   vars:
     mysql_user: "{{ l_mysql_user }}"
   with_items: "{{ mariadb.users }}"
 
-- include_role:
+- name: mariadb - include geerlingguy.mysql
+  include_role:
     name: geerlingguy.mysql
 
 # todo: configure centos support

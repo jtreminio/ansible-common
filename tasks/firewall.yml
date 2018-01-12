@@ -1,11 +1,11 @@
 ---
 
-- name: define default firewall values
+- name: firewall - define default firewall values
   set_fact:
     iptables_deny_all: true
     iptables_allowed_tcp_ports: []
 
-- name: add predefined rules
+- name: firewall - add user-defined firewall rules
   include: firewall_add.yml
   loop_control:
     loop_var: loop_rule
@@ -13,9 +13,10 @@
     rule: "{{ loop_rule }}"
   with_items: "{{ _firewall_user_rules|d([]) }}"
 
-- name: populate iptables_raw_rules
+- name: firewall - set Stouts.iptables variables
   set_fact:
-    iptables_raw_rules: "{{ (firewall_rules|d([]))|unique }}"
+    iptables_raw_rules: "{{ (firewall_rules|d([])) | unique }}"
 
-- include_role:
+- name: firewall - include Stouts.iptables
+  include_role:
     name: Stouts.iptables

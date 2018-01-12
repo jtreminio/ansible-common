@@ -1,15 +1,19 @@
 ---
 
+# rvm_io.ruby considers the last item in ruby_version list to be the default
+# ruby version. Take user-provided ruby version list and resort so default
+# version is at bottom of list
+
 - set_fact:
     ruby_version: "{{ ruby_v.version }}"
     ruby_default: "{{ ruby_v.default|d(0) }}"
 
-- name: merge previously defined ruby_rvms with new ruby_rvm
+- name: ruby.version - add Ruby version to master list
   set_fact:
-    rvm1_rubies: "{{ (rvm1_rubies|d([]))|reject('search', ruby_version)|list }}"
+    rvm1_rubies: "{{ (rvm1_rubies|d([])) | reject('search', ruby_version) | list }}"
   when: ruby_default|int == 1
 
-- name: place default Ruby version at end of list
+- name: ruby.version - place default Ruby version at end of list
   set_fact:
-    rvm1_rubies: "{{ rvm1_rubies|list_append(ruby_version) }}"
+    rvm1_rubies: "{{ rvm1_rubies | list_append(ruby_version) }}"
   when: ruby_default|int == 1

@@ -1,6 +1,7 @@
 ---
 
-- set_fact:
+- name: postgresql.database - set databse list values, no login password
+  set_fact:
     p_database:
       name: "{{ psql_database.name }}"
       lc_collate: "{{ psql_database.lc_collate|d('en_US.UTF-8') }}"
@@ -8,8 +9,18 @@
       encoding: "{{ psql_database.encoding|d('UTF-8') }}"
       template: "{{ psql_database.template|d('template0') }}"
       login_host: "{{ psql_database.login_host|d('localhost') }}"
-      login_password: "{{ psql_database.login_password|d('') }}"
 
-- name: merge previously defined postgresql_databases with new p_database
+- name: postgresql.database - set database login password
   set_fact:
-    postgresql_databases: "{{ (postgresql_databases|d([]))|list_append(p_database) }}"
+    p_database_password:
+      login_password: "{{ psql_database.login_password|d('') }}"
+  no_log: true
+
+- set_fact:
+    p_database: "{{ p_database | deep_merge(p_database_password) }}"
+  no_log: true
+
+- name: postgresql.database - add database to master list
+  set_fact:
+    postgresql_databases: "{{ (postgresql_databases|d([])) | list_append(p_database) }}"
+  no_log: true

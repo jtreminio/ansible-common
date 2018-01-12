@@ -1,6 +1,7 @@
 ---
 
-- group:
+- name: group - create user-defined groups
+  group:
     name: "{{ item }}"
     state: present
   with_items: "{{ groups_list }}"

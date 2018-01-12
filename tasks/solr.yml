@@ -1,18 +1,21 @@
 ---
 
-- set_fact:
+- name: solr - set geerlingguy.solr variables
+  set_fact:
     solr_version: "{{ solr.settings.version }}"
     solr_port: "{{ solr.settings.port|d(8983) }}"
 
-- include_tasks: firewall_add.yml
+- name: solr - add solr port to firewall
+  include_tasks: firewall_add.yml
   vars:
     rule:
       protocol: tcp
       port: "{{ solr_port }}"
       action: accept
 
-- include_role:
-    name: geerlingguy.java
+- name: solr - install Java
+  include_tasks: java.yml
 
-- include_role:
+- name: solr - include geerlingguy.solr
+  include_role:
     name: geerlingguy.solr

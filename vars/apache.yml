@@ -1,0 +1,7 @@
+---
+
+_apache_default_vhost:
+  -
+    docroot: /var/www/html
+    port:
+        - '*:80'

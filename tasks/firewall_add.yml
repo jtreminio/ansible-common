@@ -1,16 +1,17 @@
 ---
 
-- set_fact:
-    firewall_rule: "{{ _firewall_rule|combine(rule) }}"
+- name: firewall_add - merge user-defined firewall rule with default
+  set_fact:
+    firewall_rule: "{{ _firewall_rule | combine(rule) }}"
 
-- name: create firewall rule string
+- name: firewall_add - create firewall rule string
   set_fact:
     rule_string: "{{ lookup('template', playbook_dir + '/roles/jtreminio.common/templates/firewall/add_rule.j2') }}"
 
-- name: merge previously defined rules with new rule
+- name: firewall_add - merge previously defined rules with new rule
   set_fact:
-    firewall_rules: "{{ (firewall_rules|d([]))|list_append(rule_string) }}"
+    firewall_rules: "{{ (firewall_rules|d([])) | list_append(rule_string) }}"
 
-- name: add firewall rule immediately
+- name: firewall_add - add firewall rule immediately
   script: "{{ playbook_dir }}/roles/jtreminio.common/files/firewall-add.sh \"{{ rule_string[0] }}\""
   changed_when: False

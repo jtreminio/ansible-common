@@ -1,22 +1,30 @@
 ---
 
-- set_fact:
-    mysql_root_password: "{{ mysql.settings.root_password }}"
-    mysql_user_password: "{{ mysql.settings.root_password }}"
+- name: mysql - set geerlingguy.mysql variables
+  set_fact:
     mysql_root_password_update: yes
     mysql_user_password_update: yes
-    mysql_databases: "{{ mysql.databases }}"
+    mysql_databases: "{{ mysql.databases|d([]) }}"
 
-- include_tasks: mysql/package/debian-mysql.yml
+- name: mysql - set geerlingguy.mysql password variables
+  set_fact:
+    mysql_root_password: "{{ mysql.settings.root_password }}"
+    mysql_user_password: "{{ mysql.settings.root_password }}"
+  no_log: true
 
-- include_tasks: mysql/user.yml
+- name: mysql - configure repo
+  include_tasks: "mysql/package-{{ ansible_os_family }}-mysql.yml"
+
+- name: mysql - create user list
+  include_tasks: mysql/user.yml
   loop_control:
     loop_var: l_mysql_user
   vars:
     mysql_user: "{{ l_mysql_user }}"
   with_items: "{{ mysql.users }}"
 
-- include_role:
+- name: mysql - include geerlingguy.mysql
+  include_role:
     name: geerlingguy.mysql
 
 # todo: configure centos support

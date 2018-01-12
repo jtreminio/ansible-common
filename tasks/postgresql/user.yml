@@ -1,10 +1,21 @@
 ---
 
-- set_fact:
+- name: postgresql.user - set user list values, no password
+  set_fact:
     p_user:
       name: "{{ psql_user.username }}"
-      password: "{{ psql_user.password|d('') }}"
 
-- name: merge previously defined mysql_users with new mysql_user
+- name: postgresql.user - set user password
   set_fact:
-    postgresql_users: "{{ (postgresql_users|d([]))|list_append(p_user) }}"
+    p_user_password:
+      password: "{{ psql_user.password|d('') }}"
+  no_log: true
+
+- set_fact:
+    p_user: "{{ p_user | deep_merge(p_user_password) }}"
+  no_log: true
+
+- name: postgresql.user - add user to master list
+  set_fact:
+    postgresql_users: "{{ (postgresql_users|d([])) | list_append(p_user) }}"
+  no_log: true

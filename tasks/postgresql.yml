@@ -1,32 +1,45 @@
 ---
 
-- set_fact:
+- name: postgresql - set geerlingguy.postgresql variables
+  set_fact:
+    postgresql_version: "{{ postgresql.settings.version|d('9.6') }}"
     postgresql_locales: "{{ postgresql.settings.locales|d(['en_US.UTF-8']) }}"
 
-- include_tasks: postgresql/package/debian.yml
+- name: postgresql - configure repo
+  include_tasks: "postgresql/package-{{ ansible_os_family }}.yml"
 
-- include_tasks: postgresql/database.yml
+- name: postgresql - create database list
+  include_tasks: postgresql/database.yml
   loop_control:
     loop_var: l_postgresql_db
   vars:
     psql_database: "{{ l_postgresql_db }}"
-  with_items: "{{ postgresql.databases }}"
+  with_items: "{{ postgresql.databases|d([]) }}"
 
-- include_tasks: postgresql/user.yml
+- name: postgresql - create user list
+  include_tasks: postgresql/user.yml
   loop_control:
     loop_var: l_postgresql_user
   vars:
     psql_user: "{{ l_postgresql_user }}"
-  with_items: "{{ postgresql.users }}"
+  with_items: "{{ postgresql.users|d([]) }}"
 
-- include_tasks: postgresql/privilege.yml
-  loop_control:
-    loop_var: l_postgresql_privilege
-  vars:
-    psql_privilege: "{{ l_postgresql_privilege }}"
-  with_items: "{{ postgresql.privileges }}"
-
-- include_role:
+- name: postgresql - include geerlingguy.postgresql
+  include_role:
     name: geerlingguy.postgresql
+
+- name: postgresql - set privileges
+  postgresql_privs:
+    database: "{{ item.database }}"
+    state: "{{ item.state|d('present') }}"
+    privs: "{{ item.privs|d([]) | join(',') }}"
+    type: "{{ item.type|d('database') }}"
+    objs: "{{ item.objs|d([]) | join(',') }}"
+    schema: "{{ item.schema|d(omit) }}"
+    roles: "{{ item.roles|d([]) | join(',') }}"
+    grant_option: "{{ item.grant_option|d(omit) }}"
+  become: true
+  become_user: postgres
+  with_items: "{{ postgresql.privileges|d([]) }}"
 
 # todo: configure centos support

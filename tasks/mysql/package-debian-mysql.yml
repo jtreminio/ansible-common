@@ -1,38 +1,38 @@
 ---
 
-- set_fact:
+- name: mysql.package-debian-mariadb - set repo URL variables for MySQL 5.6
+  set_fact:
     mysql_version: 5.6
     mysql_distro: wily
   when: mysql.settings.version in (5.6, 56, '5.6', '56')
 
-- set_fact:
+- name: mysql.package-debian-mariadb - set repo URL variables for MySQL 5.7
+  set_fact:
     mysql_version: 5.7
     mysql_distro: "{{ ansible_distribution_release }}"
   when: mysql.settings.version in (5.7, 57, '5.7', '57')
 
-- name: Add MySQL Apt Key
+- name: mysql.package-debian-mysql - add MySQL apt key
   apt_key:
     keyserver: ha.pool.sks-keyservers.net
-    id: A4A9406876FCBD3C456770C88C718D3B5072E1F5
+    id: 'A4A9406876FCBD3C456770C88C718D3B5072E1F5'
     state: present
 
-- apt_repository:
-    repo: "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-apt-config"
+- name: mysql.package-debian-mysql - add repos without cache update
+  apt_repository:
+    repo: "{{ item }}"
     update_cache: no
+  with_items:
+    - "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-apt-config"
+    - "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-{{ mysql_version }}"
+    - "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-tools"
 
-- apt_repository:
-    repo: "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-{{ mysql_version }}"
-    update_cache: no
-
-- apt_repository:
-    repo: "deb http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-tools"
-    update_cache: no
-
-- apt_repository:
+- name: mysql.package-debian-mysql - add final repos with cache update
+  apt_repository:
     repo: "deb-src http://repo.mysql.com/apt/ubuntu/ {{ mysql_distro }} mysql-{{ mysql_version }}"
     update_cache: yes
 
-- name: Pin mysql release
+- name: mysql.package-debian-mysql - pin mysql release
   copy:
     dest: /etc/apt/preferences.d/mysql
     content: |

@@ -1,12 +1,23 @@
 ---
 
-- set_fact:
+- name: mysql.user - set user list values, no password
+  set_fact:
     m_user:
       name: "{{ mysql_user.user.split('@')[0] }}"
       host: "{{ (mysql_user.user.split('@')[1])|d('localhost') }}"
-      password: "{{ mysql_user.password }}"
-      priv: "{{ mysql_user.privileges|d([''])|join('/') }}"
+      priv: "{{ mysql_user.privileges|d(['']) | join('/') }}"
 
-- name: merge previously defined mysql_users with new mysql_user
+- name: mysql.user - set user password
   set_fact:
-    mysql_users: "{{ (mysql_users|d([]))|list_append(m_user) }}"
+    m_user_password:
+      password: "{{ mysql_user.password }}"
+  no_log: true
+
+- set_fact:
+    m_user: "{{ m_user | deep_merge(m_user_password) }}"
+  no_log: true
+
+- name: mysql.user - add user to master list
+  set_fact:
+    mysql_users: "{{ (mysql_users|d([])) | list_append(m_user) }}"
+  no_log: true

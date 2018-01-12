@@ -1,9 +1,11 @@
 ---
 
-- set_fact:
+- name: mailhog - set geerlingguy.mailhog variables
+  set_fact:
     mailhog_install_dir: "{{ mailhog.settings.path }}"
 
-- include_tasks: firewall_add.yml
+- name: mailhog - add mailhog ports to firewall
+  include_tasks: firewall_add.yml
   vars:
     rule:
       protocol: tcp
@@ -13,5 +15,6 @@
     - 1025
     - 8025
 
-- include_role:
+- name: mailhog - include geerlingguy.mailhog
+  include_role:
     name: geerlingguy.mailhog

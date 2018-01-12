@@ -1,12 +1,14 @@
 ---
 
-- cron:
+- name: "cron.job - set ENV vars for '{{ job.name }}' cron"
+  cron:
     name: "{{ item.split('=')[0] }}"
     env: yes
     value: "{{ item.split('=')[1:][0] }}"
   with_items: "{{ job.environment|d([]) }}"
 
-- cron:
+- name: "cron.job - create '{{ job.name }}' cron"
+  cron:
     name: "{{ job.name }}"
     user: "{{ job.user }}"
     job: "{{ job.command }}"

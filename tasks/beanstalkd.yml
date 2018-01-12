@@ -1,15 +1,18 @@
 ---
 
-- set_fact:
+- name: beanstalkd - set vpeltot.beanstalkd variables
+  set_fact:
     beanstalkd_listen_address: "{{ beanstalkd.settings.listenaddress }}"
     beanstalkd_listen_port: "{{ beanstalkd.settings.listenport }}"
 
-- include_tasks: firewall_add.yml
+- name: beanstalkd - add beanstalkd port to firewall
+  include_tasks: firewall_add.yml
   vars:
     rule:
       protocol: tcp
       port: "{{ beanstalkd_listen_port }}"
       action: accept
 
-- include_role:
+- name: beanstalkd - include vpeltot.beanstalkd
+  include_role:
     name: vpeltot.beanstalkd
