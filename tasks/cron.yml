@@ -1,9 +1,50 @@
 ---
+# Expected variables:
+#   crons
+
+- include_vars: cron.yml
+
+- set_fact:
+    _generated_crontabs: []
+
+- name: cron - create tmp cron directory
+  file:
+    path: "{{ _cron_tmp_dir }}"
+    state: directory
+    owner: root
+    group: root
+
+- name: cron - ensure tmp cron directory purged
+  purge_dir:
+    dir: "{{ _cron_tmp_dir }}"
+    keep: []
+  changed_when: False
 
 - name: cron - include cron/job.yml
   include_tasks: cron/job.yml
   loop_control:
     loop_var: l_job
   vars:
-    job: "{{ l_job }}"
-  with_items: "{{ crons }}"
+    index: "{{ l_job.0 }}"
+    job: "{{ l_job.1 }}"
+  with_indexed_items: "{{ crons }}"
+
+- name: cron - copy generated crontab if different from existing
+  copy_remotely:
+    src: "{{ _cron_tmp_dir }}/{{ item }}"
+    dest: "/var/spool/cron/crontabs/{{ item }}"
+  with_items: "{{ _generated_crontabs }}"
+
+- name: cron - set crontab permissions
+  file:
+    path: "/var/spool/cron/crontabs/{{ item }}"
+    owner: "{{ item }}"
+    group: crontab
+    mode: 0600
+  with_items: "{{ _generated_crontabs }}"
+
+- name: cron - wipe tmp cron directory
+  purge_dir:
+    dir: "{{ _cron_tmp_dir }}"
+    keep: []
+  changed_when: False

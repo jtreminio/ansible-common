@@ -1,0 +1,14 @@
+---
+
+_cron_tmp_dir: /tmp/crontab
+
+_cron_job:
+  name: ''
+  user: ''
+  command: ''
+  minute: '*'
+  hour: '*'
+  weekday: '*'
+  month: '*'
+  monthday: '*'
+  environment: []

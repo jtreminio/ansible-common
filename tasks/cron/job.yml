@@ -1,20 +1,62 @@
 ---
 
-- name: "cron.job - set ENV vars for '{{ job.name }}' cron"
+- name: cron.job - merge user-defined cron job data with default
+  set_fact:
+    _job: "{{ _cron_job | deep_merge(job) }}"
+
+- name: "cron - create temp file for '{{ _job.name }}' env variables"
+  file:
+    path: "{{ _cron_tmp_dir }}/{{ _job.user }}-env-{{ index }}"
+    owner: root
+    group: root
+    state: touch
+    mode: 0600
+  changed_when: False
+
+- name: "cron - create temp file for '{{ _job.name }}' job"
+  file:
+    path: "{{ _cron_tmp_dir }}/{{ _job.user }}-job-{{ index }}"
+    owner: root
+    group: root
+    state: touch
+    mode: 0600
+  changed_when: False
+
+- name: "cron - write '{{ _job.name }}' env variables to temp file"
   cron:
     name: "{{ item.split('=')[0] }}"
-    env: yes
+    user: ' '
     value: "{{ item.split('=')[1:][0] }}"
-  with_items: "{{ job.environment|d([]) }}"
+    env: yes
+    cron_file: "{{ _cron_tmp_dir }}/{{ _job.user }}-env-{{ index }}"
+  with_items: "{{ _job.environment|d([]) }}"
+  changed_when: False
 
-- name: "cron.job - create '{{ job.name }}' cron"
+- name: "cron - write '{{ _job.name }}' job to temp file"
   cron:
-    name: "{{ job.name }}"
-    user: "{{ job.user }}"
-    job: "{{ job.command }}"
-    minute: "{{ (job.minute == '') | ternary('*', job.minute) }}"
-    hour: "{{ (job.hour == '') | ternary('*', job.hour) }}"
-    weekday: "{{ (job.weekday == '') | ternary('*', job.weekday) }}"
-    month: "{{ (job.month == '') | ternary('*', job.month) }}"
-    day: "{{ (job.monthday == '') | ternary('*', job.monthday) }}"
+    name: "{{ _job.name }}"
+    user: ' '
+    job: "{{ _job.command }}"
+    minute: "{{ (_job.minute == '') | ternary('*', _job.minute) }}"
+    hour: "{{ (_job.hour == '') | ternary('*', _job.hour) }}"
+    weekday: "{{ (_job.weekday == '') | ternary('*', _job.weekday) }}"
+    month: "{{ (_job.month == '') | ternary('*', _job.month) }}"
+    day: "{{ (_job.monthday == '') | ternary('*', _job.monthday) }}"
+    cron_file: "{{ _cron_tmp_dir }}/{{ _job.user }}-job-{{ index }}"
+  changed_when: False
 
+- name: "cron - append '{{ _job.name }}' env variables to merged file"
+  shell: "cat '{{ _cron_tmp_dir }}/{{ _job.user }}-env-{{ index }}' >> '{{ _cron_tmp_dir }}/{{ _job.user }}'"
+  args:
+    executable: /bin/bash
+  changed_when: False
+
+- name: "cron - append '{{ _job.name }}' job to merged file"
+  shell: "cat '{{ _cron_tmp_dir }}/{{ _job.user }}-job-{{ index }}' >> '{{ _cron_tmp_dir }}/{{ _job.user }}'"
+  args:
+    executable: /bin/bash
+  changed_when: False
+
+- name: cron - keep track of user cron files
+  set_fact:
+    _generated_crontabs: "{{ _generated_crontabs | list_append(_job.user) }}"
