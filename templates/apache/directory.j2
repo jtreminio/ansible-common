@@ -1,279 +1,279 @@
-{% for directory in vhost.sections|default([]) %}
-  {% if directory.provider|default(false) == 'directorymatch' %}{% set provider = 'DirectoryMatch' %}
-  {% elif directory.provider|default(false) == 'locationmatch' %}{% set provider = 'LocationMatch' %}
-  {% elif directory.provider|default(false) == 'filesmatch' %}{% set provider = 'FilesMatch' %}
-  {% elif directory.provider|default(false) == 'proxymatch' %}{% set provider = 'ProxyMatch' %}
-  {% else %}{% set provider = (directory.provider|default('directory'))|capitalize %}{% endif %}
+{% for directory in _vhost.sections|d([]) %}
+  {% if directory.provider|d(false) == 'directorymatch' %}{% set provider = 'DirectoryMatch' %}
+  {% elif directory.provider|d(false) == 'locationmatch' %}{% set provider = 'LocationMatch' %}
+  {% elif directory.provider|d(false) == 'filesmatch' %}{% set provider = 'FilesMatch' %}
+  {% elif directory.provider|d(false) == 'proxymatch' %}{% set provider = 'ProxyMatch' %}
+  {% else %}{% set provider = (directory.provider|d('directory')) | capitalize %}{% endif %}
 
-  {% if directory.allow|default(false) not in [false, 'false', ''] %}
+  {% if directory.allow|d(false) not in [false, 'false', ''] %}
   # WARNING: Using `allow` is deprecated in your Apache version
   {% endif %}
-  {% if directory.deny|default(false) not in [false, 'false', ''] %}
+  {% if directory.deny|d(false) not in [false, 'false', ''] %}
   # WARNING: Using `deny` is deprecated in your Apache version
   {% endif %}
-  {% if directory.order|default(false) not in [false, 'false', ''] %}
+  {% if directory.order|d(false) not in [false, 'false', ''] %}
   # WARNING: Using `order` is deprecated in your Apache version
   {% endif %}
-  {% if directory.satisfy|default(false) not in [false, 'false', ''] %}
+  {% if directory.satisfy|d(false) not in [false, 'false', ''] %}
   # WARNING: Using `satisfy` is deprecated in your Apache version
   {% endif %}
-  {% if directory.path|default(false) %}
+  {% if directory.path|d(false) %}
   <{{ provider}} "{{ directory.path }}">
-    {% for header in directory.headers|default([]) %}
+    {% for header in directory.headers|d([]) %}
     Header {{ header }}
     {% endfor %}
-    {% if directory.geoip_enable|default(false) %}
+    {% if directory.geoip_enable|d(false) %}
     GeoIPEnable {{ directory.geoip_enable }}
     {% endif %}
-    {% if directory.options|default(false) %}
-    Options {{ directory.options|join(' ') }}
+    {% if directory.options|d(false) %}
+    Options {{ directory.options | join(' ') }}
     {% endif %}
     {% if provider == 'Directory' %}
-      {% if directory.index_options|default(false) %}
-    IndexOptions {{ directory.index_options|join(' ') }}
+      {% if directory.index_options|d(false) %}
+    IndexOptions {{ directory.index_options | join(' ') }}
       {% endif %}
-      {% if directory.index_order_default|default(false) %}
-    IndexOrderDefault {{ directory.index_order_default|join(' ') }}
+      {% if directory.index_order_default|d(false) %}
+    IndexOrderDefault {{ directory.index_order_default | join(' ') }}
       {% endif %}
-      {% if directory.index_style_sheet|default(false) %}
-    IndexStyleSheet {{ directory.index_style_sheet|join(' ') }}
+      {% if directory.index_style_sheet|d(false) %}
+    IndexStyleSheet {{ directory.index_style_sheet | join(' ') }}
       {% endif %}
-      {% if directory.allow_override|default(false) %}
-    AllowOverride {{ directory.allow_override|join(' ') }}
+      {% if directory.allow_override|d(false) %}
+    AllowOverride {{ directory.allow_override | join(' ') }}
       {% else %}
     AllowOverride None
       {% endif %}
     {% endif %}
     {% set item = directory %}
     {% include 'apache/require.j2' %}
-    {% for __, lim in (directory.limit|default({})).iteritems() %}
+    {% for __, lim in (directory.limit|d({})).iteritems() %}
     <Limit {{ lim.methods }}>
       {% set item = lim %}
       {% include 'apache/require.j2' %}
     </Limit>
     {% endfor %}
-    {% for addhandler in directory.addhandlers|default([]) %}
-    <FilesMatch ".+({{ addhandler.extensions|map('regex_escape')|join('|') }})$">
+    {% for addhandler in directory.addhandlers|d([]) %}
+    <FilesMatch ".+({{ addhandler.extensions | map('regex_escape') | join('|') }})$">
       SetHandler {{ addhandler.handler }}
     </FilesMatch>
     {% endfor %}
-    {% if directory.sethandler|default(false) %}
+    {% if directory.sethandler|d(false) %}
     SetHandler {{ directory.sethandler }}
     {% endif %}
-    {% if directory.passenger_enabled|default(false) %}
+    {% if directory.passenger_enabled|d(false) %}
     PassengerEnabled {{ directory.passenger_enabled }}
     {% endif %}
-    {% for flag, value in directory.php_flags|default({})|dictsort %}
-      {% if value|string in ['true', 'True', '1'] %}{% set v = 'on' %}{% else %}{% set v = 'off' %}{% endif %}
+    {% for flag, value in directory.php_flags|d({}) | dictsort %}
+      {% if value | string in ['true', 'True', '1'] %}{% set v = 'on' %}{% else %}{% set v = 'off' %}{% endif %}
     php_flag {{ flag }} {{ v }}
     {% endfor %}
-    {% for key, value in directory.php_values|default({})|dictsort %}
+    {% for key, value in directory.php_values|d({}) | dictsort %}
     php_value {{ key }} {{ value }}
     {% endfor %}
-    {% for flag, value in directory.php_admin_flags|default({})|dictsort %}
-      {% if value|string in ['true', 'True', '1'] %}{% set v = 'on' %}{% else %}{% set v = 'off' %}{% endif %}
+    {% for flag, value in directory.php_admin_flags|d({}) | dictsort %}
+      {% if value | string in ['true', 'True', '1'] %}{% set v = 'on' %}{% else %}{% set v = 'off' %}{% endif %}
     php_admin_flag {{ flag }} {{ v }}
     {% endfor %}
-    {% for key, value in directory.php_admin_values|default({})|dictsort %}
+    {% for key, value in directory.php_admin_values|d({}) | dictsort %}
     php_admin_value {{ key }} {{ value }}
     {% endfor %}
-    {% if directory.directoryindex|default(false) %}
+    {% if directory.directoryindex|d(false) %}
     DirectoryIndex {{ directory.directoryindex }}
     {% endif %}
-    {% for additional_include in directory.additional_includes|default([]) %}
+    {% for additional_include in directory.additional_includes|d([]) %}
     Include "{{ additional_include }}"
     {% endfor %}
-    {% for error_document in directory.error_documents|default([]) %}
+    {% for error_document in directory.error_documents|d([]) %}
     ErrorDocument {{ error_document.error_code }} {{ error_document.document }}
     {% endfor %}
-    {% if directory.dav|default(false) %}
+    {% if directory.dav|d(false) %}
     Dav {{ directory.dav }}
-      {% if directory.dav_depth_infinity|default(false) %}
+      {% if directory.dav_depth_infinity|d(false) %}
         {% set v = directory.dav_depth_infinity %}
-        {% if v|string in ['true', 'True', '1', 1] %}
+        {% if v | string in ['true', 'True', '1', 1] %}
           {% set v = 'On' %}
-        {% elif v|string in ['false', 'False', '0', 0] %}
+        {% elif v | string in ['false', 'False', '0', 0] %}
           {% set v = 'Off' %}
         {% endif %}
     DavDepthInfinity {{ v }}
       {% endif %}
-      {% if directory.dav_min_timeout|default(false) %}
+      {% if directory.dav_min_timeout|d(false) %}
     DavMinTimeout {{ directory.dav_min_timeout }}
       {% endif %}
     {% endif %}
-    {% if directory.auth_type|default(false) %}
+    {% if directory.auth_type|d(false) %}
     AuthType {{ directory.auth_type }}
     {% endif %}
-    {% if directory.auth_name|default(false) %}
+    {% if directory.auth_name|d(false) %}
     AuthName {{ directory.auth_name }}
     {% endif %}
-    {% if directory.auth_digest_algorithm|default(false) %}
+    {% if directory.auth_digest_algorithm|d(false) %}
     AuthDigestAlgorithm {{ directory.auth_digest_algorithm }}
     {% endif %}
-    {% if directory.auth_digest_domain|default(false) %}
+    {% if directory.auth_digest_domain|d(false) %}
     AuthDigestDomain {{ directory.auth_digest_domain }}
     {% endif %}
-    {% if directory.auth_digest_nonce_lifetime|default(false) %}
+    {% if directory.auth_digest_nonce_lifetime|d(false) %}
     AuthDigestNonceLifetime {{ directory.auth_digest_nonce_lifetime }}
     {% endif %}
-    {% if directory.auth_digest_provider|default(false) %}
+    {% if directory.auth_digest_provider|d(false) %}
     AuthDigestProvider {{ directory.auth_digest_provider }}
     {% endif %}
-    {% if directory.auth_digest_qop|default(false) %}
+    {% if directory.auth_digest_qop|d(false) %}
     AuthDigestQop {{ directory.auth_digest_qop }}
     {% endif %}
-    {% if directory.auth_digest_shmem_size|default(false) %}
+    {% if directory.auth_digest_shmem_size|d(false) %}
     AuthDigestShmemSize {{ directory.auth_digest_shmem_size }}
     {% endif %}
-    {% if directory.auth_basic_authoritative|default(false) %}
+    {% if directory.auth_basic_authoritative|d(false) %}
     AuthBasicAuthoritative {{ directory.auth_basic_authoritative }}
     {% endif %}
-    {% if directory.auth_basic_fake|default(false) %}
+    {% if directory.auth_basic_fake|d(false) %}
     AuthBasicFake {{ directory.auth_basic_fake }}
     {% endif %}
-    {% if directory.auth_basic_provider|default(false) %}
+    {% if directory.auth_basic_provider|d(false) %}
     AuthBasicProvider {{ directory.auth_basic_provider }}
     {% endif %}
-    {% if directory.auth_user_file|default(false) %}
+    {% if directory.auth_user_file|d(false) %}
     AuthUserFile {{ directory.auth_user_file }}
     {% endif %}
-    {% if directory.auth_group_file|default(false) %}
+    {% if directory.auth_group_file|d(false) %}
     AuthGroupFile {{ directory.auth_group_file }}
     {% endif %}
-    {% if directory.auth_merging|default(false) %}
+    {% if directory.auth_merging|d(false) %}
     AuthMerging {{ directory.auth_merging }}
     {% endif %}
-    {% if directory.auth_ldap_url|default(false) %}
+    {% if directory.auth_ldap_url|d(false) %}
     AuthLDAPURL {{ directory.auth_ldap_url }}
     {% endif %}
-    {% if directory.auth_ldap_bind_dn|default(false) %}
+    {% if directory.auth_ldap_bind_dn|d(false) %}
     AuthLDAPBindDN {{ directory.auth_ldap_bind_dn }}
     {% endif %}
-    {% if directory.auth_ldap_bind_password|default(false) %}
+    {% if directory.auth_ldap_bind_password|d(false) %}
     AuthLDAPBindPassword {{ directory.auth_ldap_bind_password }}
     {% endif %}
-    {% for groupattr in directory.auth_ldap_group_attribute|default([]) %}
+    {% for groupattr in directory.auth_ldap_group_attribute|d([]) %}
     AuthLDAPGroupAttribute {{ groupattr }}
     {% endfor %}
-    {% if directory.auth_ldap_group_attribute_is_dn|default(false) == 'off' %}
+    {% if directory.auth_ldap_group_attribute_is_dn|d(false) == 'off' %}
     AuthLDAPGroupAttributeIsDN Off
     {% endif %}
-    {% if directory.auth_ldap_group_attribute_is_dn|default(false) == 'on' %}
+    {% if directory.auth_ldap_group_attribute_is_dn|d(false) == 'on' %}
     AuthLDAPGroupAttributeIsDN On
     {% endif %}
-    {% if directory.fallbackresource|default(false) %}
+    {% if directory.fallbackresource|d(false) %}
     FallbackResource {{ directory.fallbackresource }}
     {% endif %}
-    {% if directory.expires_active|default(false) %}
+    {% if directory.expires_active|d(false) %}
     ExpiresActive {{ directory.expires_active }}
     {% endif %}
-    {% if directory.expires_default|default(false) %}
+    {% if directory.expires_default|d(false) %}
     ExpiresDefault {{ directory.expires_default }}
     {% endif %}
-    {% for rule in directory.expires_by_type|default([]) %}
+    {% for rule in directory.expires_by_type|d([]) %}
     ExpiresByType {{ rule }}
     {% endfor %}
 
-    {% if directory.ext_filter_options|default(false) %}
+    {% if directory.ext_filter_options|d(false) %}
     ExtFilterOptions {{ directory.ext_filter_options }}
     {% endif %}
-    {% if directory.force_type|default(false) %}
+    {% if directory.force_type|d(false) %}
     ForceType {{ directory.force_type }}
     {% endif %}
-    {% if directory.ssl_options|default([]) %}
-    SSLOptions {{ directory.ssl_options|join(' ') }}
+    {% if directory.ssl_options|d([]) %}
+    SSLOptions {{ directory.ssl_options | join(' ') }}
     {% endif %}
-    {% if directory.suphp|default({}) %}
+    {% if directory.suphp|d({}) %}
     suPHP_UserGroup {{ directory.suphp.user }} {{ directory.suphp.group }}
     {% endif %}
-    {% if directory.fcgiwrapper|default({}) %}
+    {% if directory.fcgiwrapper|d({}) %}
     FcgidWrapper {{ directory.fcgiwrapper.command }} {{ directory.fcgiwrapper.suffix }} {{ directory.fcgiwrapper.virtual }}
     {% endif %}
-    {% if directory.rewrites|default({}) %}
+    {% if directory.rewrites|d({}) %}
     # Rewrite rules
     RewriteEngine On
-      {% for rewrite_details in directory.rewrites|default([]) %}
-        {% if rewrite_details.comment|default(false) %}
+      {% for rewrite_details in directory.rewrites|d([]) %}
+        {% if rewrite_details.comment|d(false) %}
     #{{ rewrite_details.comment }}
         {% endif %}
-        {% if rewrite_details.rewrite_base|default(false) %}
+        {% if rewrite_details.rewrite_base|d(false) %}
     RewriteBase {{ rewrite_details.rewrite_base }}
         {% endif %}
-        {% for command in rewrite_details.rewrite_cond|default([]) %}
+        {% for command in rewrite_details.rewrite_cond|d([]) %}
     RewriteCond {{ command }}
         {% endfor %}
-        {% for command in rewrite_details.rewrite_rule|default([]) %}
+        {% for command in rewrite_details.rewrite_rule|d([]) %}
     RewriteRule {{ command }}
         {% endfor %}
       {% endfor %}
     {% endif %}
-    {% for setenv in directory.setenv|default([]) %}
+    {% for setenv in directory.setenv|d([]) %}
     SetEnv {{ setenv }}
     {% endfor %}
-    {% if directory.set_output_filter|default(false) %}
+    {% if directory.set_output_filter|d(false) %}
     SetOutputFilter {{ directory.set_output_filter }}
     {% endif %}
-    {% if directory.shib_require_session|default(false) %}
+    {% if directory.shib_require_session|d(false) %}
     ShibRequireSession {{ directory.shib_require_session }}
     {% endif %}
-    {% for shibKey, shibValue in directory.shib_request_settings|default({}) %}
+    {% for shibKey, shibValue in directory.shib_request_settings|d({}) %}
     ShibRequestSetting {{ shibKey }} {{ shibValue }}
     {% endfor %}
-    {% if directory.shib_use_headers|default(false) %}
+    {% if directory.shib_use_headers|d(false) %}
     ShibUseHeaders {{ directory.shib_use_headers }}
     {% endif %}
-    {% if directory.cas_scope|default(false) %}
+    {% if directory.cas_scope|d(false) %}
     CASScope {{ directory.cas_scope }}
     {% endif %}
-    {% if directory.cas_renew|default(false) %}
+    {% if directory.cas_renew|d(false) %}
     CASRenew {{ directory.cas_renew }}
     {% endif %}
-    {% if directory.cas_gateway|default(false) %}
+    {% if directory.cas_gateway|d(false) %}
     CASGateway {{ directory.cas_gateway }}
     {% endif %}
-    {% if directory.cas_cookie|default(false) %}
+    {% if directory.cas_cookie|d(false) %}
     CASCookie {{ directory.cas_cookie }}
     {% endif %}
-    {% if directory.cas_secure_cookie|default(false) %}
+    {% if directory.cas_secure_cookie|d(false) %}
     CASSecureCookie {{ directory.cas_secure_cookie }}
     {% endif %}
-    {% if directory.cas_gateway_cookie|default(false) %}
+    {% if directory.cas_gateway_cookie|d(false) %}
     CASGatewayCookie {{ directory.cas_gateway_cookie }}
     {% endif %}
-    {% if directory.cas_authn_header|default(false) %}
+    {% if directory.cas_authn_header|d(false) %}
     CASAuthNHeader {{ directory.cas_authn_header }}
     {% endif %}
-    {% if directory.mellon_enable|default(false) %}
+    {% if directory.mellon_enable|d(false) %}
     MellonEnable "{{ directory.mellon_enable }}"
-      {% if directory.mellon_endpoint_path|default(false) %}
+      {% if directory.mellon_endpoint_path|d(false) %}
     MellonEndpointPath "{{ directory.mellon_endpoint_path }}"
       {% endif %}
-      {% if directory.mellon_sp_private_key_file|default(false) %}
+      {% if directory.mellon_sp_private_key_file|d(false) %}
     MellonSPPrivateKeyFile "{{ directory.mellon_sp_private_key_file }}"
       {% endif %}
-      {% if directory.mellon_sp_cert_file|default(false) %}
+      {% if directory.mellon_sp_cert_file|d(false) %}
     MellonSPCertFile "{{ directory.mellon_sp_cert_file }}"
       {% endif %}
-      {% if directory.mellon_sp_metadata_file|default(false) %}
+      {% if directory.mellon_sp_metadata_file|d(false) %}
     MellonSPMetadataFile "{{ directory.mellon_sp_metadata_file }}"
       {% endif %}
-      {% if directory.mellon_idp_metadata_file|default(false) %}
+      {% if directory.mellon_idp_metadata_file|d(false) %}
     MellonIDPMetadataFile "{{ directory.mellon_idp_metadata_file }}"
       {% endif %}
-      {% for envKey, envValue in directory.mellon_set_env_no_prefix|default({}) %}
+      {% for envKey, envValue in directory.mellon_set_env_no_prefix|d({}) %}
     MellonSetEnvNoPrefix "{{ envKey }}" "{{ envValue }}"
       {% endfor %}
-      {% if directory.mellon_user|default(false) %}
+      {% if directory.mellon_user|d(false) %}
     MellonUser "{{ directory.mellon_user }}"
       {% endif %}
-      {% if directory.mellon_saml_response_dump|default(false) %}
+      {% if directory.mellon_saml_response_dump|d(false) %}
     MellonSamlResponseDump "{{ directory.mellon_saml_response_dump }}"
       {% endif %}
-      {% for cond in directory.mellon_cond|default([]) %}
+      {% for cond in directory.mellon_cond|d([]) %}
     MellonCond {{ cond }}
       {% endfor %}
     {% endif %}
-    {% if directory.custom_fragment|default(false) %}
+    {% if directory.custom_fragment|d(false) %}
     {{ directory.custom_fragment }}
     {% endif %}
   </{{ provider}}>

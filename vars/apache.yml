@@ -5,3 +5,10 @@ _apache_default_vhost:
     docroot: /var/www/html
     port:
         - '*:80'
+
+_apache_vhost:
+  servername: default
+  serveraliases: []
+  docroot:
+  port: []
+  ssl: 0

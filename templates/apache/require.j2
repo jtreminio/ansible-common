@@ -1,11 +1,11 @@
-{% if item.require|default(false) and item.require != 'unmanaged' %}
+{% if item.require|d(false) and item.require != 'unmanaged' %}
   {% if item.require is mapping %}
-    {% if item.require.enforce|default(false)|lower() in ['all', 'none', 'any'] %}
-    <Require{{ item.require.enforce|capitalize }}>
+    {% if item.require.enforce|d(false) | lower() in ['all', 'none', 'any'] %}
+    <Require{{ item.require.enforce | capitalize }}>
       {% for req in item.require.requires %}
-      Require {{ req|trim }}
+      Require {{ req | trim }}
       {% endfor %}
-    </Require{{ item.require.enforce|capitalize }}>
+    </Require{{ item.require.enforce | capitalize }}>
     {% else %}
     # WARNING: Require can only overwritten with all, none or any.
     {% endif %}
@@ -15,12 +15,12 @@
     {% endfor %}
   {% endif %}
 {% endif %}
-{% if item.auth_require|default(false) %}
+{% if item.auth_require|d(false) %}
     Require {{ item.auth_require }}
 {% endif %}
-{% if item.require|default(false) != 'unmanaged' %}
-  {% if not item.require|default(false) %}
-    {% if not item.auth_require|default(false) %}
+{% if item.require|d(false) != 'unmanaged' %}
+  {% if not item.require|d(false) %}
+    {% if not item.auth_require|d(false) %}
     Require all granted
     {% endif %}
   {% endif %}
