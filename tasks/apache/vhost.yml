@@ -1,8 +1,12 @@
 ---
 
+- name: apache.vhost - merge user-defined apache vhost data with default
+  set_fact:
+    _vhost: "{{ _apache_vhost | deep_merge(vhost) }}"
+
 - set_fact:
     index_formatted: "{{ '%02d' | format(index|int) }}"
-    servername: "{{ vhost.servername|d('default') }}"
+    servername: "{{ _vhost.servername }}"
 
 - name: apache.vhost - generate apache site config to sites-available
   template:
@@ -29,4 +33,4 @@
       protocol: tcp
       port: "{{ loop_rule | regex_replace('[A-Za-z]+[0-9]*') | regex_replace('[\\s*]') | regex_replace('[^\\d ]') }}"
       action: accept
-  with_items: "{{ vhost.port }}"
+  with_items: "{{ _vhost.port }}"

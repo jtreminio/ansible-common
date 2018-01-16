@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   timezone
 
 - name: timezone - configure timezone
   timezone:

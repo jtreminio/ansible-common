@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   rabbitmq
 
 - name: rabbitmq - set Stouts.rabbitmq variables
   set_fact:

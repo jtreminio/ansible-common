@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   groups_list
 
 - name: group - create user-defined groups
   group:

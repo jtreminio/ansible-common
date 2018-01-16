@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   locales
 
 - name: locale - configure locales
   locale_gen:

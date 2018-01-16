@@ -1,6 +1,7 @@
 ---
 
 _resolv:
-  nameservers: ''
-  domainname: ''
-  searchpath: ''
+  nameservers: "{{ ahuffman_resolv.resolv_nameservers }}"
+  domain: "{{ ahuffman_resolv.resolv_domain }}"
+  search: "{{ ahuffman_resolv.resolv_search }}"
+  options: "{{ ahuffman_resolv.resolv_options }}"

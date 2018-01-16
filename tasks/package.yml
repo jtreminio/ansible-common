@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   packages
 
 - name: package - install user-defined packages
   package:

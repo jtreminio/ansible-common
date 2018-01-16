@@ -1,17 +1,24 @@
 ---
+# Expected variables:
+#   resolv
 
+- name: resolv - get ahuffman.resolv default variables
+  include_vars:
+    file: "{{ playbook_dir }}/roles/ahuffman.resolv/defaults/main.yml"
+    name: ahuffman_resolv
 - include_vars: resolv.yml
 
-- name: resolve - merge user-defined resolv data with default
+- name: resolv - merge user-defined resolv data with default
   set_fact:
-    resolv: "{{ _resolv | combine(resolv) }}"
+    _resolv: "{{ _resolv | deep_merge(resolv) }}"
 
-- name: resolve - set ahuffman.resolv variables
+- name: resolv - set ahuffman.resolv variables
   set_fact:
-    resolv_nameservers: "{{ resolv.nameservers }}"
-    resolv_domain: "{{ resolv.domainname }}"
-    resolv_search: "{{ resolv.searchpath }}"
+    resolv_nameservers: "{{ _resolv.nameservers }}"
+    resolv_domain: "{{ _resolv.domain }}"
+    resolv_search: "{{ _resolv.search }}"
+    resolv_options: "{{ _resolv.options }}"
 
-- name: resolve - include ahuffman.resolv
+- name: resolv - include ahuffman.resolv
   include_role:
     name: ahuffman.resolv

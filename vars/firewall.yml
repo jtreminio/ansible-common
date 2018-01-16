@@ -1,0 +1,6 @@
+---
+
+_firewall_rule:
+  action: accept
+  port: ~
+  protocol: tcp

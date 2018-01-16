@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   mysql
 
 - name: mysql - set geerlingguy.mysql variables
   set_fact:
@@ -21,7 +23,7 @@
     loop_var: l_mysql_user
   vars:
     mysql_user: "{{ l_mysql_user }}"
-  with_items: "{{ mysql.users }}"
+  with_items: "{{ mysql.users|d([]) }}"
 
 - name: mysql - include geerlingguy.mysql
   include_role:

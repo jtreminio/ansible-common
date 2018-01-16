@@ -1,6 +1,44 @@
 ---
 
-_firewall_rule:
-  action: accept
-  port: ~
-  protocol: tcp
+package: []
+locale: []
+timezone: UTC
+group: []
+user: []
+firewall: []
+resolv: {}
+cron: []
+nginx:
+  install: 0
+apache:
+  install: 0
+php:
+  install: 0
+composer:
+  install: 0
+xdebug:
+  install: 0
+python:
+  install: 0
+ruby:
+  install: 0
+nodejs:
+  install: 0
+mariadb:
+  install: 0
+mysql:
+  install: 0
+postgresql:
+  install: 0
+mongodb:
+  install: 0
+redis:
+  install: 0
+mailhog:
+  install: 0
+beanstalkd:
+  install: 0
+rabbitmq:
+  install: 0
+solr:
+  install: 0

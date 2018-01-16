@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   postgresql
 
 - name: postgresql - set geerlingguy.postgresql variables
   set_fact:

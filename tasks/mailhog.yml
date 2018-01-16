@@ -1,8 +1,20 @@
 ---
+# Expected variables:
+#   mailhog
+
+- name: mailhog - include geerlingguy.mailhog default vars
+  include_vars:
+    file: "{{ playbook_dir }}/roles/geerlingguy.mailhog/defaults/main.yml"
+
+- name: mailhog - set version
+    mailhog_version: "{{ mailhog.settings.version|d('v1.0.0') }}"
+
+- name: mailhog - set binary URL
+    mailhog_binary_url: "https://github.com/mailhog/MailHog/releases/download/{{ mailhog_version }}/MailHog_linux_amd64"
 
 - name: mailhog - set geerlingguy.mailhog variables
   set_fact:
-    mailhog_install_dir: "{{ mailhog.settings.path }}"
+    mailhog_install_dir: "{{ mailhog.settings.path|d(mailhog_install_dir) }}"
 
 - name: mailhog - add mailhog ports to firewall
   include_tasks: firewall_add.yml

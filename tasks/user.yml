@@ -1,4 +1,7 @@
 ---
+# Expected variables:
+#   users - List of users. To add user to a group use the format {USER}:{GROUP}.
+#           To assign a user to multiple groups use the format {USER}:{GROUP1}:{GROUP2}
 
 - name: user - create groups from user-defined users list
   include_tasks: group.yml

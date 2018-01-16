@@ -1,4 +1,8 @@
 ---
+# Expected variables:
+#   rule
+
+- include_vars: firewall.yml
 
 - name: firewall_add - merge user-defined firewall rule with default
   set_fact:

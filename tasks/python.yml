@@ -1,18 +1,20 @@
 ---
+# Expected variables:
+#   python
 
 - name: python - set Stouts.python variables
   set_fact:
     python_ppa: ppa:deadsnakes/ppa
-    python_versions: "{{ python.versions | json_query('[].version') }}"
+    python_versions: "{{ python.versions|d([]) | json_query('[].version') }}"
     python_install: "{{ python.packages|d([]) | modify_list('@','==') }}"
     python_virtualenvs: []
 
 - name: python - generate python_virtualenvs list
   include_tasks: python/virtualenv.yml
   loop_control:
-    loop_var: python_virtenv
+    loop_var: l_virtenv
   vars:
-    virtenv: "{{ python_virtenv }}"
+    virtenv: "{{ l_virtenv }}"
   with_items: "{{ python.versions|d([]) }}"
 
 - name: python - include Stouts.python

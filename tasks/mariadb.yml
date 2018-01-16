@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   mariadb
 
 - name: mariadb - set geerlingguy.mysql variables
   set_fact:
@@ -21,7 +23,7 @@
     loop_var: l_mysql_user
   vars:
     mysql_user: "{{ l_mysql_user }}"
-  with_items: "{{ mariadb.users }}"
+  with_items: "{{ mariadb.users|d([]) }}"
 
 - name: mariadb - include geerlingguy.mysql
   include_role:

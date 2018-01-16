@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   mongodb
 
 - name: mongodb - include greendayonfire.mongodb default vars
   include_vars:
@@ -7,11 +9,11 @@
 - name: mongodb - set greendayonfire.mongodb variables
   set_fact:
     mongodb_security_authorization: enabled
-    mongodb_version: "{{ mongodb.settings.version }}"
-    mongodb_net_bindip: "{{ mongodb.settings.bind_ip|d('127.0.0.1') }}"
-    mongodb_net_port: "{{ mongodb.settings.port|d('27017') }}"
-    mongodb_root_admin_name: "{{ mongodb.settings.root_admin_user }}"
-    mongodb_user_admin_name: "{{ mongodb.settings.user_admin_user }}"
+    mongodb_version: "{{ mongodb.settings.version|d(mongodb_version) }}"
+    mongodb_net_bindip: "{{ mongodb.settings.bind_ip|d(mongodb_net_bindip) }}"
+    mongodb_net_port: "{{ mongodb.settings.port|d(mongodb_net_port) }}"
+    mongodb_root_admin_name: "{{ mongodb.settings.root_admin_user|d(mongodb_root_admin_name) }}"
+    mongodb_user_admin_name: "{{ mongodb.settings.user_admin_user|d(mongodb_user_admin_name) }}"
 
 - name: mongodb - set greendayonfire.mongodb password variables
   set_fact:

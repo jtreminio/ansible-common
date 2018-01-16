@@ -1,8 +1,10 @@
 ---
+# Expected variables:
+#   ruby
 
 - name: ruby - set rvm_io.ruby variables
   set_fact:
-    rvm1_rubies: "{{ ruby.versions | json_query('[].version') }}"
+    rvm1_rubies: "{{ ruby.versions|d([]) | json_query('[].version') }}"
     rvm1_bundler_install: false
     rvm1_install_path: /usr/local/rvm
     rvm1_install_flags: '--auto-dotfiles'

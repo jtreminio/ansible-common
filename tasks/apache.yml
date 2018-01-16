@@ -1,15 +1,17 @@
 ---
+# Expected variables:
+#   apache
 
-- include_vars: apache.yml
-- include_vars: "apache-{{ ansible_os_family|lower }}.yml"
 - include_vars: "{{ playbook_dir }}/roles/geerlingguy.apache/vars/{{ ansible_os_family }}.yml"
+- include_vars: apache.yml
+- include_vars: "apache-{{ ansible_os_family | lower }}.yml"
 
 - name: apache - set geerlingguy.apache variables
   set_fact:
     apache_version: "{{ apache.settings.version|d(2.4) }}"
     apache_mods_enabled: "{{ (apache.modules|d([])) | modify_list('(.*)', '\\1.load') }}"
-    apache_create_vhosts: false
     apache_vhosts: "{{ apache.vhosts|d([]) }}"
+    apache_create_vhosts: false
 
 - name: apache - enable apache default vhost?
   set_fact:
@@ -83,10 +85,10 @@
     notify_apache_list:
       - restart apache
 
-# we call apache/vhost.yml a second to generate config files on the initial
-# ansible run; sites-available/sites-enabled would not exist on the first
-# ansible run so the first apache/vhost.yml would not actually generate
-# anything!
+# we call apache/vhost.yml a second time to generate config files on the
+# initial ansible run; sites-available/sites-enabled would not exist on
+# the first ansible run so the first apache/vhost.yml would not actually
+# generate anything!
 - name: apache - create apache vhosts after calling geerlingguy.apache
   include_tasks: apache/vhost.yml
   loop_control:

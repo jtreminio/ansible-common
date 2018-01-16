@@ -1,9 +1,15 @@
 ---
+# Expected variables:
+#   beanstalkd
+
+- name: beanstalkd - include vpeltot.beanstalkd default vars
+  include_vars:
+    file: "{{ playbook_dir }}/roles/vpeltot.beanstalkd/defaults/main.yml"
 
 - name: beanstalkd - set vpeltot.beanstalkd variables
   set_fact:
-    beanstalkd_listen_address: "{{ beanstalkd.settings.listenaddress }}"
-    beanstalkd_listen_port: "{{ beanstalkd.settings.listenport }}"
+    beanstalkd_listen_address: "{{ beanstalkd.settings.listenaddress|d(beanstalkd_listen_address) }}"
+    beanstalkd_listen_port: "{{ beanstalkd.settings.listenport|d(beanstalkd_listen_port) }}"
 
 - name: beanstalkd - add beanstalkd port to firewall
   include_tasks: firewall_add.yml

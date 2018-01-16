@@ -1,8 +1,12 @@
 ---
+# Expected variables:
+#   nodejs
+
+- include_vars: "{{ playbook_dir }}/roles/geerlingguy.nodejs/defaults/main.yml"
 
 - name: nodejs - set geerlingguy.nodejs variables
   set_fact:
-    nodejs_version: "{{ nodejs.settings.version }}"
+    nodejs_version: "{{ nodejs.settings.version|d(nodejs_version) }}"
     nodejs_install_npm_user: root
 
 - name: nodejs - construct nodejs_npm_global_packages list

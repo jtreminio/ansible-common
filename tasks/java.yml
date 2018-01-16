@@ -1,4 +1,6 @@
 ---
+# Expected variables:
+#   java
 
 - name: java - java key may not be present in config file
   set_fact:

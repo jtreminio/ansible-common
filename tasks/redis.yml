@@ -1,8 +1,14 @@
 ---
+# Expected variables:
+#   redis
+
+- name: redis - include geerlingguy.redis default vars
+  include_vars:
+    file: "{{ playbook_dir }}/roles/geerlingguy.redis/defaults/main.yml"
 
 - name: redis - set geerlingguy.redis variables
   set_fact:
-    redis_port: "{{ redis.settings.port|d(6379) }}"
+    redis_port: "{{ redis.settings.port|d(redis_port) }}"
 
 - name: redis - add redis default port to firewall
   include_tasks: firewall_add.yml
